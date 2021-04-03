@@ -61,8 +61,8 @@ uint64_t e7()
 
 const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
 
-// Main code
-int main(int, char**)
+
+int Run(const char* pModulePath, const char* pMockFilePath)
 {
 	// Create application window
 	//ImGui_ImplWin32_EnableDpiAwareness();
@@ -115,7 +115,7 @@ int main(int, char**)
 	//IM_ASSERT(font != NULL);
 
 	HMODULE selfHandle = GetModuleHandle(NULL);
-	HMODULE testModuleHandle = LoadLibraryA("d3d9_arcdps_killproof_me.dll");
+	HMODULE testModuleHandle = LoadLibraryA(pModulePath);
 	assert(testModuleHandle != NULL);
 
 	auto get_init_addr = reinterpret_cast<GetInitAddrSignature>(GetProcAddress(testModuleHandle, "get_init_addr"));
@@ -128,7 +128,13 @@ int main(int, char**)
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
 
-	CombatMock combatMock{&TEST_MODULE_EXPORTS};
+	CombatMock combatMock{ &TEST_MODULE_EXPORTS };
+	if (pMockFilePath != nullptr)
+	{
+		uint32_t result = combatMock.LoadFromFile(pMockFilePath);
+		assert(result == 0);
+		combatMock.Execute();
+	}
 
 	// Main loop
 	MSG msg;
@@ -204,8 +210,26 @@ int main(int, char**)
 	return 0;
 }
 
-// Helper functions
+// Main code
+int main(int pArgumentCount, const char** pArgumentVector)
+{
+	if (pArgumentCount <= 1)
+	{
+		assert(false && "Too few arguments sent");
+		return 1;
+	}
 
+	const char* modulePath = pArgumentVector[1];
+	const char* mockFilePath = nullptr;
+	if (pArgumentCount >= 3)
+	{
+		mockFilePath = pArgumentVector[2];
+	}
+
+	return Run(modulePath, mockFilePath);
+}
+
+// Helper functions
 bool CreateDeviceD3D(HWND hWnd)
 {
 	if ((g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)) == NULL)
