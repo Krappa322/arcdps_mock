@@ -3,3 +3,6 @@ x64
 ~AutoRecover*
 imgui.ini
 *.mock
+*.dll
+*.pdb
+*.lib
