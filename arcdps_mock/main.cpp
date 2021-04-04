@@ -17,7 +17,7 @@
 extern "C" __declspec(dllexport) void e3(const char* pString);
 extern "C" __declspec(dllexport) uint64_t e6();
 extern "C" __declspec(dllexport) uint64_t e7();
-
+extern "C" __declspec(dllexport) void e8(const char* pString);
 
 // Data
 static LPDIRECT3D9              g_pD3D = NULL;
@@ -31,6 +31,7 @@ void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static arcdps_exports TEST_MODULE_EXPORTS;
+static CombatMock combatMock;
 
 namespace
 {
@@ -45,9 +46,10 @@ struct ArcModifiers
 #pragma pack(pop)
 }
 
+// arcdps file log
 void e3(const char* pString)
 {
-	return; // Logging, ignored
+	combatMock.e3LogLine(pString);
 }
 
 uint64_t e6()
@@ -59,6 +61,11 @@ uint64_t e7()
 {
 	ArcModifiers mods;
 	return *reinterpret_cast<uint64_t*>(&mods);
+}
+
+void e8(const char* pString)
+{
+	combatMock.e8LogLine(pString);
 }
 
 const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
@@ -130,7 +137,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
 
-	CombatMock combatMock (&TEST_MODULE_EXPORTS);
+	combatMock = CombatMock(&TEST_MODULE_EXPORTS);
 	if (pMockFilePath != nullptr)
 	{
 		uint32_t result = combatMock.LoadFromFile(pMockFilePath);
@@ -163,6 +170,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 		// Show options window (mirror of arcdps options)
 		{
 			ImGui::Begin("Options");
+			ImGui::Checkbox("Logs", &combatMock.showLog);
 			if (TEST_MODULE_EXPORTS.options_end != nullptr)
 			{
 				TEST_MODULE_EXPORTS.options_end();

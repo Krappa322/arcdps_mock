@@ -1,4 +1,6 @@
 #pragma once
+#include <deque>
+
 #include "arcdps_structs.h"
 
 #include <map>
@@ -45,6 +47,7 @@ private:
 	};
 
 public:
+	CombatMock(){};
 	CombatMock(arcdps_exports* pCallbacks);
 
 	void AddAgent(const char* pAgentName, const char* pAccountName, Prof pProfession, uint32_t pElite, uint8_t pSubgroup, uint64_t pMasterUniqueId);
@@ -55,6 +58,11 @@ public:
 	void Execute();
 
 	void DisplayWindow();
+
+	// logging
+	void e8LogLine(const std::string& line);
+	void e3LogLine(const std::string& line);
+	bool showLog = false;
 
 private:
 	void FillAgent(const Agent* pAgent, uint64_t pSelfId, ag& pResult);
@@ -68,6 +76,7 @@ private:
 	void DisplayAddAgent();
 	void DisplayAddEvent();
 	void DisplayActions();
+	void DisplayLog();
 
 	arcdps_exports* myCallbacks;
 
@@ -95,4 +104,10 @@ private:
 	char myInputFilePath[512] = {};
 
 	std::map<uint32_t, std::string> mySkillNames;
+
+	// logs window
+	std::deque<std::string> e3_log; //filelog
+	std::deque<std::string> e8_log; //ingamelog
+	bool showFileLog = false;
+	int linesToKeep = 50;
 };

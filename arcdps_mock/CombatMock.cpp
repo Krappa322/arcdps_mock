@@ -515,6 +515,27 @@ void CombatMock::DisplayWindow()
 	DisplayAddAgent();
 	DisplayAddEvent();
 	DisplayActions();
+
+	if (showLog == true)
+	{
+		DisplayLog();
+	}
+}
+
+void CombatMock::e3LogLine(const std::string& line) {
+	if (e3_log.size() > linesToKeep)
+	{
+		e3_log.pop_front();
+	}
+	e3_log.push_back(line);
+}
+
+void CombatMock::e8LogLine(const std::string& line) {
+	if (e8_log.size() > linesToKeep)
+	{
+		e8_log.pop_front();
+	}
+	e8_log.push_back(line);
 }
 
 void CombatMock::DisplayAgents()
@@ -799,6 +820,35 @@ void CombatMock::DisplayAddEvent()
 			break;
 		}
 	}
+	ImGui::End();
+}
+
+void CombatMock::DisplayLog()
+{
+	ImGui::Begin("Logs", &showLog);
+	if (ImGui::BeginPopupContextWindow() == true)
+	{
+		ImGui::InputInt("Lines to keep", &linesToKeep);
+		ImGui::Checkbox("show filelog", &showFileLog);
+
+		ImGui::EndPopup();
+	}
+
+	if (showFileLog == true)
+	{
+		for (const auto& logLine : e3_log)
+		{
+			ImGui::Text("%s", logLine.c_str());
+		}
+	}
+	else
+	{
+		for (const auto& logLine : e8_log)
+		{
+			ImGui::Text("%s", logLine.c_str());
+		}
+	}
+
 	ImGui::End();
 }
 
