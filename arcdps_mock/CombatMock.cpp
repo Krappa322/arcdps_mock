@@ -1,4 +1,6 @@
 #include "CombatMock.h"
+
+#include "arcdps_structs.h"
 #include "Windows.h"
 
 #include "imgui.h"
@@ -32,7 +34,7 @@ void CombatMock::AddEvent(CombatEventType pType, uint64_t pTime, uint64_t pSourc
 	newEvent.IsBuff = pIsBuff;
 }
 
-CombatMock::CombatMock(const arcdps_exports* pCallbacks)
+CombatMock::CombatMock(arcdps_exports* pCallbacks)
 	: myCallbacks(pCallbacks)
 {
 }

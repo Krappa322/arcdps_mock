@@ -11,6 +11,8 @@
 #include <dinput.h>
 #include <tchar.h>
 
+#include "arcdps_structs.h"
+
 
 extern "C" __declspec(dllexport) void e3(const char* pString);
 extern "C" __declspec(dllexport) uint64_t e6();
@@ -128,7 +130,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
 
-	CombatMock combatMock{ &TEST_MODULE_EXPORTS };
+	CombatMock combatMock (&TEST_MODULE_EXPORTS);
 	if (pMockFilePath != nullptr)
 	{
 		uint32_t result = combatMock.LoadFromFile(pMockFilePath);
