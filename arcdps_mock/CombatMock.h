@@ -1,8 +1,8 @@
 #pragma once
-#include <deque>
 
 #include "arcdps_structs.h"
 
+#include <list>
 #include <map>
 #include <stdint.h>
 #include <string>
@@ -47,7 +47,7 @@ private:
 	};
 
 public:
-	CombatMock(){};
+	CombatMock(){}
 	CombatMock(arcdps_exports* pCallbacks);
 
 	void AddAgent(const char* pAgentName, const char* pAccountName, Prof pProfession, uint32_t pElite, uint8_t pSubgroup, uint64_t pMasterUniqueId);
@@ -106,8 +106,8 @@ private:
 	std::map<uint32_t, std::string> mySkillNames;
 
 	// logs window
-	std::deque<std::string> e3_log; //filelog
-	std::deque<std::string> e8_log; //ingamelog
+	std::list<std::string> e3_log; //filelog
+	std::list<std::string> e8_log; //ingamelog
 	bool showFileLog = false;
 	int linesToKeep = 50;
 };
