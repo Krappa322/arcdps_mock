@@ -6,3 +6,4 @@ imgui.ini
 *.dll
 *.pdb
 *.lib
+*.xevtc
