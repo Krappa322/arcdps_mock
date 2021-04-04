@@ -15,6 +15,7 @@
 
 
 extern "C" __declspec(dllexport) void e3(const char* pString);
+extern "C" __declspec(dllexport) void e5(ImVec4** colors);
 extern "C" __declspec(dllexport) uint64_t e6();
 extern "C" __declspec(dllexport) uint64_t e7();
 extern "C" __declspec(dllexport) void e8(const char* pString);
@@ -50,6 +51,107 @@ struct ArcModifiers
 void e3(const char* pString)
 {
 	combatMock.e3LogLine(pString);
+}
+
+/* e5 writes out colour array ptrs, sizeof(out) == sizeof(ImVec4*) * 5.  [ void e5(ImVec4** out) ]
+	  out[0] = core cols
+				  enum n_colours_core {
+					CCOL_TRANSPARENT,
+					CCOL_WHITE,
+					CCOL_LWHITE,
+					CCOL_LGREY,
+					CCOL_LYELLOW,
+					CCOL_LGREEN,
+					CCOL_LRED,
+					CCOL_LTEAL,
+					CCOL_MGREY,
+					CCOL_DGREY,
+					CCOL_NUM
+				  };
+	  out[1] = prof colours base
+	  out[2] = prof colours highlight
+				  prof colours match prof enum
+	  out[3] = subgroup colours base
+	  out[4] = subgroup colours highlight
+				  subgroup colours match subgroup, up to game max, out[3][15]
+	*/
+ImVec4 coreCols[11] { // size of enum `n_colours_core`
+	ImVec4(1.000000f,1.000000f,1.000000f,0.000000f),
+	ImVec4(1.000000f,1.000000f,1.000000f,1.000000f),
+	ImVec4(0.800000f,0.800000f,0.830000f,1.000000f),
+	ImVec4(0.690000f,0.650000f,0.660000f,1.000000f),
+	ImVec4(1.000000f,1.000000f,0.380000f,1.000000f),
+	ImVec4(0.380000f,1.000000f,0.380000f,1.000000f),
+	ImVec4(1.000000f,0.380000f,0.380000f,1.000000f),
+	ImVec4(0.380000f,1.000000f,1.000000f,1.000000f),
+	ImVec4(0.500000f,0.470000f,0.480000f,1.000000f),
+	ImVec4(0.250000f,0.220000f,0.230000f,1.000000f),
+	ImVec4(0.000000f,0.000000f,5.688562f,-0.000000f)
+};
+ImVec4 profColsBase[9] { // size of enum `Prof`
+	ImVec4(0.340000f,0.300000f,0.360000f,0.490000f),
+	ImVec4(0.040000f,0.870000f,1.000000f,0.430000f),
+	ImVec4(1.000000f,0.830000f,0.240000f,0.430000f),
+	ImVec4(0.890000f,0.450000f,0.160000f,0.430000f),
+	ImVec4(0.530000f,0.870000f,0.040000f,0.430000f),
+	ImVec4(0.890000f,0.370000f,0.450000f,0.450000f),
+	ImVec4(0.970000f,0.220000f,0.220000f,0.430000f),
+	ImVec4(0.800000f,0.230000f,0.820000f,0.430000f),
+	ImVec4(0.020000f,0.890000f,0.490000f,0.430000f)
+};
+ImVec4 profColsHighlight[9] { // size of enum `Prof`
+	ImVec4(0.340000f,0.300000f,0.360000f,0.250000f),
+	ImVec4(0.040000f,0.870000f,1.000000f,0.210000f),
+	ImVec4(1.000000f,0.830000f,0.240000f,0.210000f),
+	ImVec4(0.890000f,0.450000f,0.160000f,0.210000f),
+	ImVec4(0.530000f,0.870000f,0.040000f,0.210000f),
+	ImVec4(0.890000f,0.370000f,0.450000f,0.280000f),
+	ImVec4(0.970000f,0.220000f,0.220000f,0.210000f),
+	ImVec4(0.800000f,0.230000f,0.820000f,0.210000f),
+	ImVec4(0.020000f,0.890000f,0.490000f,0.210000f)
+};
+ImVec4 subgroupColsBase[15] { // max amount of subgroups (currently 15), defined by gw2
+	ImVec4(0.340000f,0.300000f,0.360000f,0.490000f),
+	ImVec4(0.970000f,0.140000f,0.140000f,0.430000f),
+	ImVec4(0.140000f,0.450000f,0.970000f,0.430000f),
+	ImVec4(0.640000f,0.140000f,0.970000f,0.430000f),
+	ImVec4(0.140000f,0.970000f,0.970000f,0.430000f),
+	ImVec4(0.970000f,0.970000f,0.140000f,0.430000f),
+	ImVec4(0.970000f,0.470000f,0.140000f,0.430000f),
+	ImVec4(0.140000f,0.970000f,0.140000f,0.430000f),
+	ImVec4(0.970000f,0.140000f,0.970000f,0.430000f),
+	ImVec4(0.470000f,0.400000f,0.190000f,0.430000f),
+	ImVec4(1.000000f,0.140000f,0.640000f,0.430000f),
+	ImVec4(0.800000f,1.000000f,0.000000f,0.430000f),
+	ImVec4(1.000000f,0.800000f,0.000000f,0.430000f),
+	ImVec4(0.000000f,0.800000f,1.000000f,0.430000f),
+	ImVec4(1.000000f,0.470000f,0.800000f,0.430000f)
+};
+ImVec4 subgroupColsHighlight[15] { // max amount of subgroups (currently 15), defined by gw2
+	ImVec4(0.340000f,0.300000f,0.360000f,0.250000f),
+	ImVec4(0.970000f,0.140000f,0.140000f,0.210000f),
+	ImVec4(0.140000f,0.450000f,0.970000f,0.210000f),
+	ImVec4(0.640000f,0.140000f,0.970000f,0.210000f),
+	ImVec4(0.140000f,0.970000f,0.970000f,0.210000f),
+	ImVec4(0.970000f,0.970000f,0.140000f,0.210000f),
+	ImVec4(0.970000f,0.470000f,0.140000f,0.210000f),
+	ImVec4(0.140000f,0.970000f,0.140000f,0.210000f),
+	ImVec4(0.970000f,0.140000f,0.970000f,0.210000f),
+	ImVec4(0.470000f,0.400000f,0.190000f,0.210000f),
+	ImVec4(1.000000f,0.140000f,0.640000f,0.210000f),
+	ImVec4(0.800000f,1.000000f,0.000000f,0.210000f),
+	ImVec4(1.000000f,0.800000f,0.000000f,0.210000f),
+	ImVec4(0.000000f,0.800000f,1.000000f,0.210000f),
+	ImVec4(1.000000f,0.470000f,0.800000f,0.210000f)
+};
+
+void e5(ImVec4** colors)
+{
+	colors[0] = coreCols;
+	colors[1] = profColsBase;
+	colors[2] = profColsHighlight;
+	colors[3] = subgroupColsBase;
+	colors[4] = subgroupColsHighlight;
 }
 
 uint64_t e6()
