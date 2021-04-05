@@ -992,7 +992,7 @@ void CombatMock::DisplayAddEvent()
 
 void CombatMock::DisplayLog()
 {
-	ImGui::Begin("Logs", &showLog);
+	ImGui::Begin("Logs", &showLog, ImGuiWindowFlags_NoCollapse);
 	if (ImGui::BeginPopupContextWindow() == true)
 	{
 		ImGui::InputInt("Lines to keep", &linesToKeep);
