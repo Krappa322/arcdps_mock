@@ -47,8 +47,7 @@ private:
 	};
 
 public:
-	CombatMock(){}
-	CombatMock(arcdps_exports* pCallbacks);
+	CombatMock(const arcdps_exports* pCallbacks);
 
 	void AddAgent(const char* pAgentName, const char* pAccountName, Prof pProfession, uint32_t pElite, uint8_t pSubgroup, uint64_t pMasterUniqueId);
 	void AddEvent(CombatEventType pType, uint64_t pTime, uint64_t pSourceAgentUniqueId, uint64_t pDestinationAgentUniqueId, uint32_t pSkillId, int32_t pValue, bool pIsBuff);
@@ -78,7 +77,7 @@ private:
 	void DisplayActions();
 	void DisplayLog();
 
-	arcdps_exports* myCallbacks;
+	const arcdps_exports* const myCallbacks;
 
 	std::vector<Agent> myAgents;
 	std::vector<CombatEvent> myEvents;

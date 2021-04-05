@@ -9,6 +9,7 @@
 #include <d3d9.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+#include <memory>
 #include <tchar.h>
 
 #include "arcdps_structs.h"
@@ -32,7 +33,7 @@ void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static arcdps_exports TEST_MODULE_EXPORTS;
-static CombatMock combatMock;
+static std::unique_ptr<CombatMock> combatMock;
 
 namespace
 {
@@ -50,7 +51,7 @@ struct ArcModifiers
 // arcdps file log
 void e3(const char* pString)
 {
-	combatMock.e3LogLine(pString);
+	combatMock->e3LogLine(pString);
 }
 
 /* e5 writes out colour array ptrs, sizeof(out) == sizeof(ImVec4*) * 5.  [ void e5(ImVec4** out) ]
@@ -167,7 +168,7 @@ uint64_t e7()
 
 void e8(const char* pString)
 {
-	combatMock.e8LogLine(pString);
+	combatMock->e8LogLine(pString);
 }
 
 const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
@@ -239,12 +240,12 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
 
-	combatMock = CombatMock(&TEST_MODULE_EXPORTS);
+	combatMock = std::make_unique<CombatMock>(&TEST_MODULE_EXPORTS);
 	if (pMockFilePath != nullptr)
 	{
-		uint32_t result = combatMock.LoadFromFile(pMockFilePath);
+		uint32_t result = combatMock->LoadFromFile(pMockFilePath);
 		assert(result == 0);
-		combatMock.Execute();
+		combatMock->Execute();
 	}
 
 	// Main loop
@@ -272,7 +273,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 		// Show options window (mirror of arcdps options)
 		{
 			ImGui::Begin("Options");
-			ImGui::Checkbox("Logs", &combatMock.showLog);
+			ImGui::Checkbox("Logs", &combatMock->showLog);
 			if (TEST_MODULE_EXPORTS.options_end != nullptr)
 			{
 				TEST_MODULE_EXPORTS.options_end();
@@ -290,7 +291,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 			ImGui::End();
 		}
 
-		combatMock.DisplayWindow();
+		combatMock->DisplayWindow();
 
 		if (TEST_MODULE_EXPORTS.imgui != nullptr)
 		{

@@ -34,7 +34,7 @@ void CombatMock::AddEvent(CombatEventType pType, uint64_t pTime, uint64_t pSourc
 	newEvent.IsBuff = pIsBuff;
 }
 
-CombatMock::CombatMock(arcdps_exports* pCallbacks)
+CombatMock::CombatMock(const arcdps_exports* pCallbacks)
 	: myCallbacks(pCallbacks)
 {
 }
