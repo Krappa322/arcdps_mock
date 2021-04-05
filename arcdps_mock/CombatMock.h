@@ -105,6 +105,7 @@ private:
 	char myInputFilePath[512] = {};
 
 	std::map<uint32_t, std::string> mySkillNames;
+	std::vector<std::string> mXevtcStrings;
 
 	// logs window
 	std::list<std::string> e3_log; //filelog
