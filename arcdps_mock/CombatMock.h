@@ -56,6 +56,8 @@ public:
 	uint32_t LoadFromFile(const char* pFilePath);
 	void Execute();
 
+	uint32_t ExecuteFromXevtc(const char* pFilePath);
+
 	void DisplayWindow();
 
 	// logging

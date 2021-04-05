@@ -3,4 +3,19 @@
   <PropertyGroup>
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>..\x64\Debug\arcdps_mock.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>"$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)"</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Mock Debug|x64'">
+    <LocalDebuggerCommand>..\x64\Debug\arcdps_mock.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>"$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)"</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommand>..\x64\Debug\arcdps_mock.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>"$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)"</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

@@ -180,7 +180,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	//ImGui_ImplWin32_EnableDpiAwareness();
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("Arcdps Mock"), NULL };
 	::RegisterClassEx(&wc);
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Arcdps Mock"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
+	HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Arcdps Mock"), WS_OVERLAPPEDWINDOW | WS_MAXIMIZE, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
 
 	// Initialize Direct3D
 	if (!CreateDeviceD3D(hwnd))
@@ -191,7 +191,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	}
 
 	// Show the window
-	::ShowWindow(hwnd, SW_SHOWDEFAULT);
+	::ShowWindow(hwnd, SW_MAXIMIZE);
 	::UpdateWindow(hwnd);
 
 	// Setup Dear ImGui context

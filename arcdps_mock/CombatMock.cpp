@@ -1,8 +1,8 @@
 #include "CombatMock.h"
 
 #include "arcdps_structs.h"
-#include "Windows.h"
-
+#include "Log.h"
+#include "Xevtc.h"
 #include "imgui.h"
 #include "json.hpp"
 
@@ -508,6 +508,153 @@ void CombatMock::Execute()
 	}
 }
 
+uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
+{
+	std::string buffer;
+	buffer.reserve(128 * 1024);
+
+	FILE* file = fopen(pFilePath, "r");
+	if (file == nullptr)
+	{
+		LOG("Opening '%s' failed - %u", pFilePath, errno);
+		return errno;
+	}
+
+	XevtcHeader header;
+	size_t read = fread(&header, sizeof(header), 1, file);
+	if (ferror(file) != 0)
+	{
+		LOG("Reading header from '%s' failed - %u", pFilePath, errno);
+		return errno;
+	}
+	else if (read != 1)
+	{
+		LOG("Reading header from '%s' failed - file is too short", pFilePath);
+		return UINT32_MAX;
+	}
+
+	std::vector<std::string> stringsVector{};
+	stringsVector.reserve(header.StringCount);
+	for (uint32_t i = 0; i < header.StringCount; i++)
+	{
+		uint16_t size;
+		read = fread(&size, sizeof(size), 1, file);
+		if (ferror(file) != 0)
+		{
+			LOG("Reading string header %u from '%s' failed - %u", i, pFilePath, errno);
+			return errno;
+		}
+		else if (read != 1)
+		{
+			LOG("Reading string header %u from '%s' failed - file is too short", i, pFilePath);
+			return UINT32_MAX;
+		}
+
+		std::string& newString = stringsVector.emplace_back();
+		newString.resize(size);
+
+		read = fread(newString.data(), size, 1, file);
+		if (ferror(file) != 0)
+		{
+			LOG("Reading string data %u (size %hu) from '%s' failed - %u", i, size, pFilePath, errno);
+			return errno;
+		}
+		else if (read != 1)
+		{
+			LOG("Reading string data %u (size %hu) from '%s' failed - file is too short", i, size, pFilePath);
+			return UINT32_MAX;
+		}
+	}
+
+	auto eventsVector = std::make_unique<XevtcEvent[]>(header.EventCount);
+	read = fread(eventsVector.get(), sizeof(XevtcEvent), header.EventCount, file);
+	if (ferror(file) != 0)
+	{
+		LOG("Reading events (size %hu) from '%s' failed - %u", header.EventCount, pFilePath, errno);
+		return errno;
+	}
+	else if (read != header.EventCount)
+	{
+		LOG("Reading events (size %hu) from '%s' failed - file is too short", header.EventCount, pFilePath);
+		return UINT32_MAX;
+	}
+
+	if (fclose(file) == EOF)
+	{
+		LOG("Closing '%s' failed - %u", pFilePath, errno);
+		return errno;
+	}
+
+	// Sending the events
+	for (uint32_t i = 0; i < header.EventCount; i++)
+	{
+		ag source;
+		ag destination;
+		cbtevent ev;
+
+		ag* source_arg = nullptr;
+		ag* destination_arg = nullptr;
+		cbtevent* ev_arg = nullptr;
+		const char* skillname = nullptr;
+
+		if (eventsVector[i].ev.present == true)
+		{
+			ev = *static_cast<cbtevent*>(&eventsVector[i].ev);
+			ev_arg = &ev;
+		}
+
+		if (eventsVector[i].source_ag.present == true)
+		{
+			source.id = eventsVector[i].source_ag.id;
+			source.prof = eventsVector[i].source_ag.prof;
+			source.elite = eventsVector[i].source_ag.elite;
+			source.self = eventsVector[i].source_ag.self;
+			source.name = stringsVector[eventsVector[i].source_ag.name.Index - 1].c_str();
+			source.team = eventsVector[i].source_ag.team;
+
+			source_arg = &source;
+		}
+
+		if (eventsVector[i].destination_ag.present == true)
+		{
+			destination.id = eventsVector[i].destination_ag.id;
+			destination.prof = eventsVector[i].destination_ag.prof;
+			destination.elite = eventsVector[i].destination_ag.elite;
+			destination.self = eventsVector[i].destination_ag.self;
+			destination.name = stringsVector[eventsVector[i].destination_ag.name.Index - 1].c_str();
+			destination.team = eventsVector[i].destination_ag.team;
+
+			destination_arg = &destination;
+		}
+
+		if (eventsVector[i].skillname.Index != UINT32_MAX)
+		{
+			skillname = stringsVector[eventsVector[i].skillname.Index - 1].c_str();
+		}
+
+		switch (eventsVector[i].collector_source)
+		{
+		case XevtcEventSource::Area:
+			if (myCallbacks->combat != nullptr)
+			{
+				myCallbacks->combat(ev_arg, source_arg, destination_arg, skillname, eventsVector[i].id, eventsVector[i].revision);
+			}
+			break;
+		case XevtcEventSource::Local:
+			if (myCallbacks->combat_local != nullptr)
+			{
+				myCallbacks->combat_local(ev_arg, source_arg, destination_arg, skillname, eventsVector[i].id, eventsVector[i].revision);
+			}
+			break;
+		default:
+			LOG("Invalid event source %u for event %u", eventsVector[i].collector_source, i);
+			break;
+		}
+	}
+
+	LOG("Simulated %u events from %s", header.EventCount, pFilePath);
+}
+
 void CombatMock::DisplayWindow()
 {
 	DisplayAgents();
@@ -516,7 +663,7 @@ void CombatMock::DisplayWindow()
 	DisplayAddEvent();
 	DisplayActions();
 
-	if (showLog == true)
+	if (showFileLog == true)
 	{
 		DisplayLog();
 	}
@@ -854,7 +1001,7 @@ void CombatMock::DisplayLog()
 
 void CombatMock::DisplayActions()
 {
-	ImGui::SetNextWindowSize(ImVec2(360, 160), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(360, 180), ImGuiCond_Always);
 	if (ImGui::Begin("Actions", nullptr) == true)
 	{
 		bool selfAgentExists = (GetAgent(mySelfId) != nullptr);
@@ -870,13 +1017,17 @@ void CombatMock::DisplayActions()
 		ImGui::Separator();
 
 		ImGui::InputText("File Path", myInputFilePath, sizeof(myInputFilePath));
-		if (ImGui::Button("Save") == true)
+		if (ImGui::Button("Save mock file") == true)
 		{
 			SaveToFile(myInputFilePath);
 		}
-		if (ImGui::Button("Load") == true)
+		if (ImGui::Button("Load mock file") == true)
 		{
 			LoadFromFile(myInputFilePath);
+		}
+		if (ImGui::Button("Load and simulate xevtc") == true)
+		{
+			ExecuteFromXevtc(myInputFilePath);
 		}
 		ImGui::Separator();
 
