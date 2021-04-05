@@ -349,6 +349,14 @@ int main(int pArgumentCount, const char** pArgumentVector)
 		mockFilePath = pArgumentVector[2];
 	}
 
+	// create arcdps settings directoy
+	if (!(CreateDirectoryA("addons\\", NULL) || ERROR_ALREADY_EXISTS == GetLastError())) {
+		assert(false && "Error creating addons directory");
+	}
+	if (!(CreateDirectoryA("addons\\arcdps\\", NULL) || ERROR_ALREADY_EXISTS == GetLastError())) {
+		assert(false && "Error creating arcdps directory");
+	}
+
 	return Run(modulePath, mockFilePath);
 }
 
