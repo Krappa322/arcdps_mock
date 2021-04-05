@@ -683,7 +683,7 @@ void CombatMock::DisplayWindow()
 	DisplayAddEvent();
 	DisplayActions();
 
-	if (showFileLog == true)
+	if (showLog == true)
 	{
 		DisplayLog();
 	}
