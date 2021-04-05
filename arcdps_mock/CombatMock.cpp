@@ -514,7 +514,7 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 	std::string buffer;
 	buffer.reserve(128 * 1024);
 
-	FILE* file = fopen(pFilePath, "r");
+	FILE* file = fopen(pFilePath, "rb");
 	if (file == nullptr)
 	{
 		LOG("Opening '%s' failed - %u", pFilePath, errno);
@@ -530,12 +530,12 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 	}
 	else if (read != 1)
 	{
-		LOG("Reading header from '%s' failed - file is too short", pFilePath);
+		LOG("Reading header from '%s' failed - file is too short (read %zu)", pFilePath, read);
 		return UINT32_MAX;
 	}
 
-	std::vector<std::string> stringsVector{};
-	stringsVector.reserve(header.StringCount);
+	mXevtcStrings.clear();
+	mXevtcStrings.reserve(header.StringCount);
 	for (uint32_t i = 0; i < header.StringCount; i++)
 	{
 		uint16_t size;
@@ -547,24 +547,29 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 		}
 		else if (read != 1)
 		{
-			LOG("Reading string header %u from '%s' failed - file is too short", i, pFilePath);
+			LOG("Reading string header %u from '%s' failed - file is too short (read %zu)", i, pFilePath, read);
 			return UINT32_MAX;
 		}
 
-		std::string& newString = stringsVector.emplace_back();
+		std::string& newString = mXevtcStrings.emplace_back();
 		newString.resize(size);
 
-		read = fread(newString.data(), size, 1, file);
-		if (ferror(file) != 0)
+		if (size != 0) // null strings are allowed in the xevtc
 		{
-			LOG("Reading string data %u (size %hu) from '%s' failed - %u", i, size, pFilePath, errno);
-			return errno;
+			read = fread(newString.data(), size, 1, file);
+			if (ferror(file) != 0)
+			{
+				LOG("Reading string data %u (size %hu) from '%s' failed - %u", i, size, pFilePath, errno);
+				return errno;
+			}
+			else if (read != 1)
+			{
+				LOG("Reading string data %u (size %hu) from '%s' failed - file is too short (read %zu)", i, size, pFilePath, read);
+				return UINT32_MAX;
+			}
 		}
-		else if (read != 1)
-		{
-			LOG("Reading string data %u (size %hu) from '%s' failed - file is too short", i, size, pFilePath);
-			return UINT32_MAX;
-		}
+
+		LOG("Parsed string %u %hu %s", i, size, newString.c_str());
 	}
 
 	auto eventsVector = std::make_unique<XevtcEvent[]>(header.EventCount);
@@ -576,7 +581,7 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 	}
 	else if (read != header.EventCount)
 	{
-		LOG("Reading events (size %hu) from '%s' failed - file is too short", header.EventCount, pFilePath);
+		LOG("Reading events (size %hu) from '%s' failed - file is too short (read %zu)", header.EventCount, pFilePath, read);
 		return UINT32_MAX;
 	}
 
@@ -610,7 +615,14 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 			source.prof = eventsVector[i].source_ag.prof;
 			source.elite = eventsVector[i].source_ag.elite;
 			source.self = eventsVector[i].source_ag.self;
-			source.name = stringsVector[eventsVector[i].source_ag.name.Index - 1].c_str();
+			if (eventsVector[i].source_ag.name.Index != UINT32_MAX)
+			{
+				source.name = mXevtcStrings[eventsVector[i].source_ag.name.Index - 1].c_str();
+			}
+			else
+			{
+				source.name = nullptr;
+			}
 			source.team = eventsVector[i].source_ag.team;
 
 			source_arg = &source;
@@ -622,7 +634,14 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 			destination.prof = eventsVector[i].destination_ag.prof;
 			destination.elite = eventsVector[i].destination_ag.elite;
 			destination.self = eventsVector[i].destination_ag.self;
-			destination.name = stringsVector[eventsVector[i].destination_ag.name.Index - 1].c_str();
+			if (eventsVector[i].destination_ag.name.Index != UINT32_MAX)
+			{
+				destination.name = mXevtcStrings[eventsVector[i].destination_ag.name.Index - 1].c_str();
+			}
+			else
+			{
+				destination.name = nullptr;
+			}
 			destination.team = eventsVector[i].destination_ag.team;
 
 			destination_arg = &destination;
@@ -630,7 +649,7 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 
 		if (eventsVector[i].skillname.Index != UINT32_MAX)
 		{
-			skillname = stringsVector[eventsVector[i].skillname.Index - 1].c_str();
+			skillname = mXevtcStrings[eventsVector[i].skillname.Index - 1].c_str();
 		}
 
 		switch (eventsVector[i].collector_source)
@@ -654,6 +673,7 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 	}
 
 	LOG("Simulated %u events from %s", header.EventCount, pFilePath);
+	return 0;
 }
 
 void CombatMock::DisplayWindow()

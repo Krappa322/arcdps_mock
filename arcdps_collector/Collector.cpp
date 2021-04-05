@@ -121,7 +121,7 @@ void Collector::Reset()
 uint32_t Collector::Save(const char* pFilePath)
 {
 	XevtcHeader header;
-	FILE* file = fopen(pFilePath, "w");
+	FILE* file = fopen(pFilePath, "wb");
 	if (file == nullptr)
 	{
 		LOG("Opening '%s' failed - %u", pFilePath, errno);
