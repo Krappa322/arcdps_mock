@@ -75,7 +75,7 @@ void e3(const char* pString)
 	  out[4] = subgroup colours highlight
 				  subgroup colours match subgroup, up to game max, out[3][15]
 	*/
-ImVec4 coreCols[11] { // size of enum `n_colours_core`
+static ImVec4 coreCols[11] { // size of enum `n_colours_core`
 	ImVec4(1.000000f,1.000000f,1.000000f,0.000000f),
 	ImVec4(1.000000f,1.000000f,1.000000f,1.000000f),
 	ImVec4(0.800000f,0.800000f,0.830000f,1.000000f),
@@ -88,7 +88,7 @@ ImVec4 coreCols[11] { // size of enum `n_colours_core`
 	ImVec4(0.250000f,0.220000f,0.230000f,1.000000f),
 	ImVec4(0.000000f,0.000000f,5.688562f,-0.000000f)
 };
-ImVec4 profColsBase[9] { // size of enum `Prof`
+static ImVec4 profColsBase[9] { // size of enum `Prof`
 	ImVec4(0.340000f,0.300000f,0.360000f,0.490000f),
 	ImVec4(0.040000f,0.870000f,1.000000f,0.430000f),
 	ImVec4(1.000000f,0.830000f,0.240000f,0.430000f),
@@ -99,7 +99,7 @@ ImVec4 profColsBase[9] { // size of enum `Prof`
 	ImVec4(0.800000f,0.230000f,0.820000f,0.430000f),
 	ImVec4(0.020000f,0.890000f,0.490000f,0.430000f)
 };
-ImVec4 profColsHighlight[9] { // size of enum `Prof`
+static ImVec4 profColsHighlight[9] { // size of enum `Prof`
 	ImVec4(0.340000f,0.300000f,0.360000f,0.250000f),
 	ImVec4(0.040000f,0.870000f,1.000000f,0.210000f),
 	ImVec4(1.000000f,0.830000f,0.240000f,0.210000f),
@@ -110,7 +110,7 @@ ImVec4 profColsHighlight[9] { // size of enum `Prof`
 	ImVec4(0.800000f,0.230000f,0.820000f,0.210000f),
 	ImVec4(0.020000f,0.890000f,0.490000f,0.210000f)
 };
-ImVec4 subgroupColsBase[15] { // max amount of subgroups (currently 15), defined by gw2
+static ImVec4 subgroupColsBase[15] { // max amount of subgroups (currently 15), defined by gw2
 	ImVec4(0.340000f,0.300000f,0.360000f,0.490000f),
 	ImVec4(0.970000f,0.140000f,0.140000f,0.430000f),
 	ImVec4(0.140000f,0.450000f,0.970000f,0.430000f),
@@ -127,7 +127,7 @@ ImVec4 subgroupColsBase[15] { // max amount of subgroups (currently 15), defined
 	ImVec4(0.000000f,0.800000f,1.000000f,0.430000f),
 	ImVec4(1.000000f,0.470000f,0.800000f,0.430000f)
 };
-ImVec4 subgroupColsHighlight[15] { // max amount of subgroups (currently 15), defined by gw2
+static ImVec4 subgroupColsHighlight[15] { // max amount of subgroups (currently 15), defined by gw2
 	ImVec4(0.340000f,0.300000f,0.360000f,0.250000f),
 	ImVec4(0.970000f,0.140000f,0.140000f,0.210000f),
 	ImVec4(0.140000f,0.450000f,0.970000f,0.210000f),
@@ -285,7 +285,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 				TEST_MODULE_EXPORTS.options_windows("log");
 				TEST_MODULE_EXPORTS.options_windows("bufftable");
 				TEST_MODULE_EXPORTS.options_windows("Errors");
-				TEST_MODULE_EXPORTS.options_windows(0);
+				TEST_MODULE_EXPORTS.options_windows(nullptr);
 			}
 			ImGui::End();
 		}
