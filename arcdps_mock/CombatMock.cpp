@@ -985,14 +985,14 @@ void CombatMock::DisplayLog()
 	{
 		for (const auto& logLine : e3_log)
 		{
-			ImGui::Text("%s", logLine.c_str());
+			ImGui::TextUnformatted(logLine.c_str());
 		}
 	}
 	else
 	{
 		for (const auto& logLine : e8_log)
 		{
-			ImGui::Text("%s", logLine.c_str());
+			ImGui::TextUnformatted(logLine.c_str());
 		}
 	}
 

@@ -76,7 +76,7 @@ void e3(const char* pString)
 	  out[4] = subgroup colours highlight
 				  subgroup colours match subgroup, up to game max, out[3][15]
 	*/
-static ImVec4 coreCols[11] { // size of enum `n_colours_core`
+static ImVec4 coreCols[CCOL_FINAL_ENTRY] { // size of enum `n_colours_core`
 	ImVec4(1.000000f,1.000000f,1.000000f,0.000000f),
 	ImVec4(1.000000f,1.000000f,1.000000f,1.000000f),
 	ImVec4(0.800000f,0.800000f,0.830000f,1.000000f),
@@ -89,7 +89,7 @@ static ImVec4 coreCols[11] { // size of enum `n_colours_core`
 	ImVec4(0.250000f,0.220000f,0.230000f,1.000000f),
 	ImVec4(0.000000f,0.000000f,5.688562f,-0.000000f)
 };
-static ImVec4 profColsBase[9] { // size of enum `Prof`
+static ImVec4 profColsBase[PROF_FINAL_ENTRY] { // size of enum `Prof`
 	ImVec4(0.340000f,0.300000f,0.360000f,0.490000f),
 	ImVec4(0.040000f,0.870000f,1.000000f,0.430000f),
 	ImVec4(1.000000f,0.830000f,0.240000f,0.430000f),
@@ -100,7 +100,7 @@ static ImVec4 profColsBase[9] { // size of enum `Prof`
 	ImVec4(0.800000f,0.230000f,0.820000f,0.430000f),
 	ImVec4(0.020000f,0.890000f,0.490000f,0.430000f)
 };
-static ImVec4 profColsHighlight[9] { // size of enum `Prof`
+static ImVec4 profColsHighlight[PROF_FINAL_ENTRY] { // size of enum `Prof`
 	ImVec4(0.340000f,0.300000f,0.360000f,0.250000f),
 	ImVec4(0.040000f,0.870000f,1.000000f,0.210000f),
 	ImVec4(1.000000f,0.830000f,0.240000f,0.210000f),
