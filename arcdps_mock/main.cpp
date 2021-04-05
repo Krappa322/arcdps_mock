@@ -9,13 +9,17 @@
 #include <d3d9.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+#include <memory>
 #include <tchar.h>
+
+#include "arcdps_structs.h"
 
 
 extern "C" __declspec(dllexport) void e3(const char* pString);
+extern "C" __declspec(dllexport) void e5(ImVec4** colors);
 extern "C" __declspec(dllexport) uint64_t e6();
 extern "C" __declspec(dllexport) uint64_t e7();
-
+extern "C" __declspec(dllexport) void e8(const char* pString);
 
 // Data
 static LPDIRECT3D9              g_pD3D = NULL;
@@ -29,6 +33,7 @@ void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static arcdps_exports TEST_MODULE_EXPORTS;
+static std::unique_ptr<CombatMock> combatMock;
 
 namespace
 {
@@ -43,9 +48,111 @@ struct ArcModifiers
 #pragma pack(pop)
 }
 
+// arcdps file log
 void e3(const char* pString)
 {
-	return; // Logging, ignored
+	combatMock->e3LogLine(pString);
+}
+
+/* e5 writes out colour array ptrs, sizeof(out) == sizeof(ImVec4*) * 5.  [ void e5(ImVec4** out) ]
+	  out[0] = core cols
+				  enum n_colours_core {
+					CCOL_TRANSPARENT,
+					CCOL_WHITE,
+					CCOL_LWHITE,
+					CCOL_LGREY,
+					CCOL_LYELLOW,
+					CCOL_LGREEN,
+					CCOL_LRED,
+					CCOL_LTEAL,
+					CCOL_MGREY,
+					CCOL_DGREY,
+					CCOL_NUM
+				  };
+	  out[1] = prof colours base
+	  out[2] = prof colours highlight
+				  prof colours match prof enum
+	  out[3] = subgroup colours base
+	  out[4] = subgroup colours highlight
+				  subgroup colours match subgroup, up to game max, out[3][15]
+	*/
+static ImVec4 coreCols[CCOL_FINAL_ENTRY] { // size of enum `n_colours_core`
+	ImVec4(1.000000f,1.000000f,1.000000f,0.000000f),
+	ImVec4(1.000000f,1.000000f,1.000000f,1.000000f),
+	ImVec4(0.800000f,0.800000f,0.830000f,1.000000f),
+	ImVec4(0.690000f,0.650000f,0.660000f,1.000000f),
+	ImVec4(1.000000f,1.000000f,0.380000f,1.000000f),
+	ImVec4(0.380000f,1.000000f,0.380000f,1.000000f),
+	ImVec4(1.000000f,0.380000f,0.380000f,1.000000f),
+	ImVec4(0.380000f,1.000000f,1.000000f,1.000000f),
+	ImVec4(0.500000f,0.470000f,0.480000f,1.000000f),
+	ImVec4(0.250000f,0.220000f,0.230000f,1.000000f),
+	ImVec4(0.000000f,0.000000f,5.688562f,-0.000000f)
+};
+static ImVec4 profColsBase[PROF_FINAL_ENTRY] { // size of enum `Prof`
+	ImVec4(0.340000f,0.300000f,0.360000f,0.490000f),
+	ImVec4(0.040000f,0.870000f,1.000000f,0.430000f),
+	ImVec4(1.000000f,0.830000f,0.240000f,0.430000f),
+	ImVec4(0.890000f,0.450000f,0.160000f,0.430000f),
+	ImVec4(0.530000f,0.870000f,0.040000f,0.430000f),
+	ImVec4(0.890000f,0.370000f,0.450000f,0.450000f),
+	ImVec4(0.970000f,0.220000f,0.220000f,0.430000f),
+	ImVec4(0.800000f,0.230000f,0.820000f,0.430000f),
+	ImVec4(0.020000f,0.890000f,0.490000f,0.430000f)
+};
+static ImVec4 profColsHighlight[PROF_FINAL_ENTRY] { // size of enum `Prof`
+	ImVec4(0.340000f,0.300000f,0.360000f,0.250000f),
+	ImVec4(0.040000f,0.870000f,1.000000f,0.210000f),
+	ImVec4(1.000000f,0.830000f,0.240000f,0.210000f),
+	ImVec4(0.890000f,0.450000f,0.160000f,0.210000f),
+	ImVec4(0.530000f,0.870000f,0.040000f,0.210000f),
+	ImVec4(0.890000f,0.370000f,0.450000f,0.280000f),
+	ImVec4(0.970000f,0.220000f,0.220000f,0.210000f),
+	ImVec4(0.800000f,0.230000f,0.820000f,0.210000f),
+	ImVec4(0.020000f,0.890000f,0.490000f,0.210000f)
+};
+static ImVec4 subgroupColsBase[15] { // max amount of subgroups (currently 15), defined by gw2
+	ImVec4(0.340000f,0.300000f,0.360000f,0.490000f),
+	ImVec4(0.970000f,0.140000f,0.140000f,0.430000f),
+	ImVec4(0.140000f,0.450000f,0.970000f,0.430000f),
+	ImVec4(0.640000f,0.140000f,0.970000f,0.430000f),
+	ImVec4(0.140000f,0.970000f,0.970000f,0.430000f),
+	ImVec4(0.970000f,0.970000f,0.140000f,0.430000f),
+	ImVec4(0.970000f,0.470000f,0.140000f,0.430000f),
+	ImVec4(0.140000f,0.970000f,0.140000f,0.430000f),
+	ImVec4(0.970000f,0.140000f,0.970000f,0.430000f),
+	ImVec4(0.470000f,0.400000f,0.190000f,0.430000f),
+	ImVec4(1.000000f,0.140000f,0.640000f,0.430000f),
+	ImVec4(0.800000f,1.000000f,0.000000f,0.430000f),
+	ImVec4(1.000000f,0.800000f,0.000000f,0.430000f),
+	ImVec4(0.000000f,0.800000f,1.000000f,0.430000f),
+	ImVec4(1.000000f,0.470000f,0.800000f,0.430000f)
+};
+static ImVec4 subgroupColsHighlight[15] { // max amount of subgroups (currently 15), defined by gw2
+	ImVec4(0.340000f,0.300000f,0.360000f,0.250000f),
+	ImVec4(0.970000f,0.140000f,0.140000f,0.210000f),
+	ImVec4(0.140000f,0.450000f,0.970000f,0.210000f),
+	ImVec4(0.640000f,0.140000f,0.970000f,0.210000f),
+	ImVec4(0.140000f,0.970000f,0.970000f,0.210000f),
+	ImVec4(0.970000f,0.970000f,0.140000f,0.210000f),
+	ImVec4(0.970000f,0.470000f,0.140000f,0.210000f),
+	ImVec4(0.140000f,0.970000f,0.140000f,0.210000f),
+	ImVec4(0.970000f,0.140000f,0.970000f,0.210000f),
+	ImVec4(0.470000f,0.400000f,0.190000f,0.210000f),
+	ImVec4(1.000000f,0.140000f,0.640000f,0.210000f),
+	ImVec4(0.800000f,1.000000f,0.000000f,0.210000f),
+	ImVec4(1.000000f,0.800000f,0.000000f,0.210000f),
+	ImVec4(0.000000f,0.800000f,1.000000f,0.210000f),
+	ImVec4(1.000000f,0.470000f,0.800000f,0.210000f)
+};
+
+void e5(ImVec4** colors)
+{
+	colors[0] = coreCols;
+	colors[1] = profColsBase;
+	colors[2] = profColsHighlight;
+	colors[3] = subgroupColsBase;
+	colors[4] = subgroupColsHighlight;
 }
 
 uint64_t e6()
@@ -57,6 +164,11 @@ uint64_t e7()
 {
 	ArcModifiers mods;
 	return *reinterpret_cast<uint64_t*>(&mods);
+}
+
+void e8(const char* pString)
+{
+	combatMock->e8LogLine(pString);
 }
 
 const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
@@ -128,12 +240,12 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
 
-	CombatMock combatMock{ &TEST_MODULE_EXPORTS };
+	combatMock = std::make_unique<CombatMock>(&TEST_MODULE_EXPORTS);
 	if (pMockFilePath != nullptr)
 	{
-		uint32_t result = combatMock.LoadFromFile(pMockFilePath);
+		uint32_t result = combatMock->LoadFromFile(pMockFilePath);
 		assert(result == 0);
-		combatMock.Execute();
+		combatMock->Execute();
 	}
 
 	// Main loop
@@ -161,14 +273,25 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 		// Show options window (mirror of arcdps options)
 		{
 			ImGui::Begin("Options");
+			ImGui::Checkbox("Logs", &combatMock->showLog);
 			if (TEST_MODULE_EXPORTS.options_end != nullptr)
 			{
 				TEST_MODULE_EXPORTS.options_end();
 			}
+
+			if (TEST_MODULE_EXPORTS.options_windows != nullptr) {
+				TEST_MODULE_EXPORTS.options_windows("skills");
+				TEST_MODULE_EXPORTS.options_windows("metrics");
+				TEST_MODULE_EXPORTS.options_windows("dps");
+				TEST_MODULE_EXPORTS.options_windows("log");
+				TEST_MODULE_EXPORTS.options_windows("bufftable");
+				TEST_MODULE_EXPORTS.options_windows("Errors");
+				TEST_MODULE_EXPORTS.options_windows(nullptr);
+			}
 			ImGui::End();
 		}
 
-		combatMock.DisplayWindow();
+		combatMock->DisplayWindow();
 
 		if (TEST_MODULE_EXPORTS.imgui != nullptr)
 		{
@@ -224,6 +347,14 @@ int main(int pArgumentCount, const char** pArgumentVector)
 	if (pArgumentCount >= 3)
 	{
 		mockFilePath = pArgumentVector[2];
+	}
+
+	// create arcdps settings directoy
+	if (!(CreateDirectoryA("addons\\", NULL) || ERROR_ALREADY_EXISTS == GetLastError())) {
+		assert(false && "Error creating addons directory");
+	}
+	if (!(CreateDirectoryA("addons\\arcdps\\", NULL) || ERROR_ALREADY_EXISTS == GetLastError())) {
+		assert(false && "Error creating arcdps directory");
 	}
 
 	return Run(modulePath, mockFilePath);

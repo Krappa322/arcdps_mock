@@ -1,6 +1,8 @@
 #pragma once
+
 #include "arcdps_structs.h"
 
+#include <list>
 #include <map>
 #include <stdint.h>
 #include <string>
@@ -58,6 +60,11 @@ public:
 
 	void DisplayWindow();
 
+	// logging
+	void e8LogLine(const std::string& line);
+	void e3LogLine(const std::string& line);
+	bool showLog = false;
+
 private:
 	void FillAgent(const Agent* pAgent, uint64_t pSelfId, ag& pResult);
 	void FillAgentEvent(const Agent& pAgent, uint64_t pSelfId, ag& pSource, ag& pDestination);
@@ -70,6 +77,7 @@ private:
 	void DisplayAddAgent();
 	void DisplayAddEvent();
 	void DisplayActions();
+	void DisplayLog();
 
 	const arcdps_exports* const myCallbacks;
 
@@ -98,4 +106,10 @@ private:
 
 	std::map<uint32_t, std::string> mySkillNames;
 	std::vector<std::string> mXevtcStrings;
+
+	// logs window
+	std::list<std::string> e3_log; //filelog
+	std::list<std::string> e8_log; //ingamelog
+	bool showFileLog = false;
+	int linesToKeep = 50;
 };
