@@ -79,7 +79,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	}
 
 	// Show the window
-	::ShowWindow(hwnd, SW_SHOWDEFAULT);
+	::ShowWindow(hwnd, SW_MAXIMIZE);
 	::UpdateWindow(hwnd);
 
 	// Setup Dear ImGui context
