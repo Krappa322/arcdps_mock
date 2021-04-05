@@ -55,7 +55,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;ARCDPS_EXTENSION_NO_LANG_H</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\imgui\;..\json\;..\arcdps-extension\;..\log\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\imgui\;..\json\;..\arcdps-extension\;..\log\;..\xevtc\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
