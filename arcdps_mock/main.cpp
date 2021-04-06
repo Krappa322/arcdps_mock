@@ -9,6 +9,7 @@
 #include <d3d9.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+#include <iostream>
 #include <memory>
 #include <tchar.h>
 
@@ -240,6 +241,11 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
 
+	if (temp_exports->sig == 0) {
+		std::cout << (char*)temp_exports->size << std::endl;
+		assert(false);
+	}
+	
 	combatMock = std::make_unique<CombatMock>(&TEST_MODULE_EXPORTS);
 	if (pMockFilePath != nullptr)
 	{
