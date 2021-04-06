@@ -683,7 +683,7 @@ void CombatMock::DisplayWindow()
 	DisplayAddEvent();
 	DisplayActions();
 
-	if (showFileLog == true)
+	if (showLog == true)
 	{
 		DisplayLog();
 	}
@@ -992,11 +992,35 @@ void CombatMock::DisplayAddEvent()
 
 void CombatMock::DisplayLog()
 {
-	ImGui::Begin("Logs", &showLog);
+	ImGui::Begin("Logs", &showLog, ImGuiWindowFlags_NoCollapse);
 	if (ImGui::BeginPopupContextWindow() == true)
 	{
 		ImGui::InputInt("Lines to keep", &linesToKeep);
 		ImGui::Checkbox("show filelog", &showFileLog);
+		if (ImGui::Button("copy to clipboard") == true) {
+			std::string text;
+			if (showFileLog == true) {
+				for (const auto& logLine : e3_log) {
+					text.append(logLine);
+					text.append("\n");
+				}
+			} else {
+				for (const auto& logLine : e8_log) {
+					text.append(logLine);
+					text.append("\n");
+				}
+			}
+			if (OpenClipboard(NULL)) {
+				EmptyClipboard();
+				HGLOBAL clipbuffer = GlobalAlloc(GMEM_DDESHARE, text.size() + 1);
+				char* buffer = (char*)GlobalLock(clipbuffer);
+				memset(buffer, 0, text.size() + 1);
+				text.copy(buffer, text.size());
+				GlobalUnlock(clipbuffer);
+				SetClipboardData(CF_TEXT, clipbuffer);
+				CloseClipboard();
+			}
+		}
 
 		ImGui::EndPopup();
 	}
