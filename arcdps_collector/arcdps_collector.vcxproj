@@ -123,11 +123,8 @@
   <ItemGroup>
     <ClCompile Include="GUI.cpp" />
     <ClInclude Include="..\arcdps-extension\arcdps_structs.h" />
-    <ClInclude Include="..\arcdps-extension\Icon.h" />
     <ClInclude Include="..\arcdps-extension\map.h" />
     <ClInclude Include="..\arcdps-extension\Widgets.h" />
-    <ClInclude Include="..\imgui\backends\imgui_impl_dx9.h" />
-    <ClInclude Include="..\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="..\imgui\imgui.h" />
     <ClInclude Include="..\imgui\imgui_internal.h" />
     <ClInclude Include="..\json\json.hpp" />
@@ -135,10 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\arcdps-extension\arcdps_structs.cpp" />
-    <ClCompile Include="..\arcdps-extension\Icon.cpp" />
     <ClCompile Include="..\arcdps-extension\Widgets.cpp" />
-    <ClCompile Include="..\imgui\backends\imgui_impl_dx9.cpp" />
-    <ClCompile Include="..\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="..\imgui\imgui.cpp" />
     <ClCompile Include="..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\imgui\imgui_draw.cpp" />
