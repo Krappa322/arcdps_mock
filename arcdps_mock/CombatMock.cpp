@@ -512,18 +512,13 @@ void CombatMock::Execute()
 	}
 }
 
-struct ExecuteXevtcEventArguments
+bool IsSelfAgentDeregister(XevtcEvent& pEvent)
 {
-	const XevtcEvent* pEvent;
-	const std::vector<std::string>* pStrings;
-	const arcdps_exports* pCallbacks;
-	std::atomic_uint32_t* pExecutedEvents;
-};
+	return pEvent.ev.present == false && pEvent.source_ag.elite == 0 && pEvent.source_ag.prof == 0 && pEvent.destination_ag.self != 0;
+}
 
-VOID CALLBACK ExecuteXevtcEvent(PVOID pParam, BOOLEAN pTimerOrWaitFired)
+void ExecuteXevtcEvent(const XevtcEvent& pEvent, const std::vector<std::string>& pStrings, const arcdps_exports& pCallbacks)
 {
-	ExecuteXevtcEventArguments* args = reinterpret_cast<ExecuteXevtcEventArguments*>(pParam);
-
 	ag source;
 	ag destination;
 	cbtevent ev;
@@ -533,86 +528,163 @@ VOID CALLBACK ExecuteXevtcEvent(PVOID pParam, BOOLEAN pTimerOrWaitFired)
 	cbtevent* ev_arg = nullptr;
 	const char* skillname = nullptr;
 
-	if (args->pEvent->ev.present == true)
+	if (pEvent.ev.present == true)
 	{
-		ev = *static_cast<const cbtevent*>(&args->pEvent->ev);
+		ev = *static_cast<const cbtevent*>(&pEvent.ev);
 		ev_arg = &ev;
 	}
 
-	if (args->pEvent->source_ag.present == true)
+	if (pEvent.source_ag.present == true)
 	{
-		source.id = args->pEvent->source_ag.id;
-		source.prof = args->pEvent->source_ag.prof;
-		source.elite = args->pEvent->source_ag.elite;
-		source.self = args->pEvent->source_ag.self;
-		if (args->pEvent->source_ag.name.Index != UINT32_MAX)
+		source.id = pEvent.source_ag.id;
+		source.prof = pEvent.source_ag.prof;
+		source.elite = pEvent.source_ag.elite;
+		source.self = pEvent.source_ag.self;
+		if (pEvent.source_ag.name.Index != UINT32_MAX)
 		{
-			source.name = (*args->pStrings)[args->pEvent->source_ag.name.Index - 1].c_str();
+			source.name = pStrings[pEvent.source_ag.name.Index - 1].c_str();
 		}
 		else
 		{
 			source.name = nullptr;
 		}
-		source.team = args->pEvent->source_ag.team;
+		source.team = pEvent.source_ag.team;
 
 		source_arg = &source;
 	}
 
-	if (args->pEvent->destination_ag.present == true)
+	if (pEvent.destination_ag.present == true)
 	{
-		destination.id = args->pEvent->destination_ag.id;
-		destination.prof = args->pEvent->destination_ag.prof;
-		destination.elite = args->pEvent->destination_ag.elite;
-		destination.self = args->pEvent->destination_ag.self;
-		if (args->pEvent->destination_ag.name.Index != UINT32_MAX)
+		destination.id = pEvent.destination_ag.id;
+		destination.prof = pEvent.destination_ag.prof;
+		destination.elite = pEvent.destination_ag.elite;
+		destination.self = pEvent.destination_ag.self;
+		if (pEvent.destination_ag.name.Index != UINT32_MAX)
 		{
-			destination.name = (*args->pStrings)[args->pEvent->destination_ag.name.Index - 1].c_str();
+			destination.name = pStrings[pEvent.destination_ag.name.Index - 1].c_str();
 		}
 		else
 		{
 			destination.name = nullptr;
 		}
-		destination.team = args->pEvent->destination_ag.team;
+		destination.team = pEvent.destination_ag.team;
 
 		destination_arg = &destination;
 	}
 
-	if (args->pEvent->skillname.Index != UINT32_MAX)
+	if (pEvent.skillname.Index != UINT32_MAX)
 	{
-		skillname = (*args->pStrings)[args->pEvent->skillname.Index - 1].c_str();
+		skillname = pStrings[pEvent.skillname.Index - 1].c_str();
 	}
 
-	switch (args->pEvent->collector_source)
+	switch (pEvent.collector_source)
 	{
 	case XevtcEventSource::Area:
-		if (args->pCallbacks->combat != nullptr)
+		if (pCallbacks.combat != nullptr)
 		{
-			args->pCallbacks->combat(ev_arg, source_arg, destination_arg, skillname, args->pEvent->id, args->pEvent->revision);
+			pCallbacks.combat(ev_arg, source_arg, destination_arg, skillname, pEvent.id, pEvent.revision);
 		}
 		break;
 	case XevtcEventSource::Local:
-		if (args->pCallbacks->combat_local != nullptr)
+		if (pCallbacks.combat_local != nullptr)
 		{
-			args->pCallbacks->combat_local(ev_arg, source_arg, destination_arg, skillname, args->pEvent->id, args->pEvent->revision);
+			pCallbacks.combat_local(ev_arg, source_arg, destination_arg, skillname, pEvent.id, pEvent.revision);
 		}
 		break;
 	default:
-		LOG("Invalid event source %u", args->pEvent->collector_source);
+		LOG("Invalid event source %u", pEvent.collector_source);
 		break;
 	}
-
-	uint32_t old = args->pExecutedEvents->fetch_sub(1, std::memory_order_relaxed);
-	assert(old != 0);
-	free(args);
 }
 
-bool IsSelfAgentDeregister(XevtcEvent& pEvent)
+struct CallbackWorkerArguments
 {
-	return pEvent.ev.present == false && pEvent.source_ag.elite == 0 && pEvent.source_ag.prof == 0 && pEvent.destination_ag.self != 0;
+	const XevtcEvent* pEvents;
+	std::atomic_bool* pEventsSent;
+	uint32_t pEventCount;
+	uint32_t pParallelCount;
+	const std::vector<uint32_t>* pJunctions;
+	std::atomic_uint32_t* pIndexSeq;
+
+	const std::vector<std::string>* pStrings;
+	const arcdps_exports* pCallbacks;
+};
+
+DWORD WINAPI CallbackWorker(LPVOID pParam)
+{
+	CallbackWorkerArguments* args = reinterpret_cast<CallbackWorkerArguments*>(pParam);
+	//LOG(">> %x >> %p %p %u %u %p %p %p %p", GetCurrentThreadId(), args->pEvents, args->pEventsSent, args->pEventCount, args->pParallelCount, args->pJunctions, args->pIndexSeq, args->pStrings, args->pCallbacks);
+
+	uint32_t notifiedIndex = 0;
+	uint32_t currentJunction = 0;
+	uint32_t executedCount = 0;
+	while (true)
+	{
+		uint32_t index = args->pIndexSeq->fetch_add(1, std::memory_order_relaxed);
+		if (index >= args->pEventCount)
+		{
+			break;
+		}
+
+		bool pastJunction = false;
+		uint32_t junctionIndex = UINT32_MAX;
+		if (currentJunction < args->pJunctions->size())
+		{
+			junctionIndex = (*args->pJunctions)[currentJunction];
+		}
+
+		if (index > junctionIndex)
+		{
+			pastJunction = true;
+			currentJunction++;
+		}
+
+		while (true)
+		{
+			while (true)
+			{
+				assert(notifiedIndex < args->pEventCount); // Otherwise, someone would have to have notified our index
+				if (args->pEventsSent[notifiedIndex].load(std::memory_order_relaxed) == false)
+				{
+					break;
+				}
+
+				notifiedIndex++;
+			}
+
+			if (index >= (notifiedIndex + args->pParallelCount))
+			{
+				//LOG("Thread %x waiting with index %u due to parallelism - %u %u", GetCurrentThreadId(), index, notifiedIndex, args->pParallelCount);
+				Sleep(0);
+				continue;
+			}
+
+			if (pastJunction == true && notifiedIndex <= junctionIndex)
+			{
+				//LOG("Thread %x waiting with index %u at junction - %u %u", GetCurrentThreadId(), index, notifiedIndex, junctionIndex);
+				Sleep(0);
+				continue;
+			}
+
+			break;
+		}
+
+		//LOG("Thread %x sending %u", GetCurrentThreadId(), index);
+		ExecuteXevtcEvent(args->pEvents[index], *args->pStrings, *args->pCallbacks);
+
+		args->pEventsSent[index].store(true, std::memory_order_relaxed);
+		executedCount++;
+	}
+
+	LOG("Thread %x exiting - %u events executed", GetCurrentThreadId(), executedCount);
+	return 0;
 }
+
 
 uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParallelEventCount, uint32_t pMaxFuzzWidth)
 {
+	LOG("Executing '%s' - pMaxParallelEventCount=%u, pMaxFuzzWidth=%u", pFilePath, pMaxParallelEventCount, pMaxFuzzWidth);
+
 	if (pMaxFuzzWidth > 0)
 	{
 		uint32_t seed = timeGetTime();
@@ -700,22 +772,15 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParall
 		return errno;
 	}
 
-	HANDLE timerQueue = NULL;
-	timerQueue = CreateTimerQueue();
-	if (timerQueue == NULL)
-	{
-		LOG("CreateTimerQueue failed (%d)", GetLastError());
-		assert(false);
-	}
-
-
 	auto queuedEvents = std::make_unique<bool[]>(header.EventCount);
 	memset(queuedEvents.get(), 0x00, header.EventCount * sizeof(bool));
 	uint32_t queuedEventCount = 0;
-	std::atomic_uint32_t eventsLeft = header.EventCount;
-	bool sentFirstEvent = false;
 
-	// Sending the events
+	bool sentFirstEvent = false;
+	
+	auto eventQueue = std::make_unique<XevtcEvent[]>(header.EventCount);
+	std::vector<uint32_t> junctions;
+
 	uint32_t globalIndex = 0;
 	while (globalIndex < header.EventCount)
 	{
@@ -749,51 +814,75 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParall
 		}
 		assert(queuedEvents[localIndex] == false);
 
-		ExecuteXevtcEventArguments* args = new ExecuteXevtcEventArguments;
-		args->pEvent = &eventsVector[localIndex];
-		args->pStrings = &mXevtcStrings;
-		args->pCallbacks = myCallbacks;
-		args->pExecutedEvents = &eventsLeft;
-
-		if (pMaxParallelEventCount == 0 || sentFirstEvent == false)
+		memcpy(&eventQueue[queuedEventCount], &eventsVector[localIndex], sizeof(eventQueue[queuedEventCount]));
+		if (IsSelfAgentDeregister(eventsVector[localIndex]) == true)
 		{
-			ExecuteXevtcEvent(args, TRUE);
-
-			// Addons need a reference id to know where the id range starts
-			if (eventsVector[localIndex].id != 0)
-			{
-				sentFirstEvent = true;
-			}
+			junctions.push_back(queuedEventCount);
 		}
-		else
+		else if (eventsVector[localIndex].id != 0 && sentFirstEvent == false)
 		{
-			HANDLE dummy;
-			if (CreateTimerQueueTimer(&dummy, timerQueue, &ExecuteXevtcEvent, args, 0, 0, WT_EXECUTEONLYONCE) == false)
-			{
-				LOG("CreateTimerQueueTimer failed (%d)", GetLastError());
-				assert(false);
-			}
+			junctions.push_back(queuedEventCount);
+			sentFirstEvent = true;
 		}
+
 		queuedEvents[localIndex] = true;
 		queuedEventCount += 1;
-
-		if (pMaxParallelEventCount > 0)
-		{
-			// Send self agent deregister synchronously since arc gives addons no way to determine combat exit as
-			// a result of map exit other than looking at the deregister event (and it has id 0 so it's unordered)
-			if ((queuedEventCount % pMaxParallelEventCount) == 0 || IsSelfAgentDeregister(eventsVector[localIndex]) == true)
-			{
-				while (eventsLeft.load(std::memory_order_relaxed) > (header.EventCount - queuedEventCount))
-				{
-					Sleep(0);
-				}
-			}
-		}
 	}
 
-	while (eventsLeft.load(std::memory_order_relaxed) > 0)
+	if (pMaxParallelEventCount > 0)
 	{
-		Sleep(0);
+		LOG("Starting %u threads", pMaxParallelEventCount);
+
+		auto eventsSent = std::make_unique<std::atomic_bool[]>(header.EventCount);
+		for (uint32_t i = 0; i < header.EventCount; i++)
+		{
+			eventsSent[i].store(false, std::memory_order_relaxed);
+		}
+		std::atomic_uint32_t indexSeq = 0;
+
+		CallbackWorkerArguments threadArguments;
+		threadArguments.pEvents = eventQueue.get();
+		threadArguments.pEventsSent = eventsSent.get();
+		threadArguments.pEventCount = header.EventCount;
+		threadArguments.pParallelCount = pMaxParallelEventCount;
+		threadArguments.pJunctions = &junctions;
+		threadArguments.pIndexSeq = &indexSeq;
+
+		threadArguments.pStrings = &mXevtcStrings;
+		threadArguments.pCallbacks = myCallbacks;
+
+		std::vector<HANDLE> threadHandles;
+		for (uint32_t i = 0; i < pMaxParallelEventCount; i++)
+		{
+			HANDLE handle = CreateThread(nullptr, 0, CallbackWorker, &threadArguments, 0, nullptr);
+			threadHandles.emplace_back(handle);
+		}
+
+		LOG("Waiting for %zu threads to finish", threadHandles.size());
+		for (uint32_t i = 0; i < threadHandles.size(); i++)
+		{
+			DWORD result = WaitForSingleObject(threadHandles[i], UINT32_MAX);
+			if (result != 0)
+			{
+				LOG("Waiting for thread %u reslted in %u GetLastError %u", i, result, GetLastError());
+			}
+		}
+		LOG("Waiting for threads finished");
+
+		for (uint32_t i = 0; i < pMaxParallelEventCount; i++)
+		{
+			CloseHandle(threadHandles[i]);
+		}
+		LOG("Threads closed");
+	}
+	else
+	{
+		LOG("Started sending events synchronously");
+		for (uint32_t i = 0; i < header.EventCount; i++)
+		{
+			ExecuteXevtcEvent(eventQueue[i], mXevtcStrings, *myCallbacks);
+		}
+		LOG("Done sending events synchronously");
 	}
 
 	LOG("Simulated %u events from %s", header.EventCount, pFilePath);
