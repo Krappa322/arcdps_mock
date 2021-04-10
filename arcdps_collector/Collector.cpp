@@ -28,7 +28,7 @@ void Collector::Add(
 		XevtcEvent* newEvent = nullptr;
 		if ((pSeq - mSeqStart) < mEvents.size())
 		{
-			newEvent = &mEvents[pSeq];
+			newEvent = &mEvents[pSeq - mSeqStart];
 			paddedCount = -1;
 		}
 		else
