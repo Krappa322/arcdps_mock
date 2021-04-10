@@ -56,7 +56,10 @@ public:
 	uint32_t LoadFromFile(const char* pFilePath);
 	void Execute();
 
-	uint32_t ExecuteFromXevtc(const char* pFilePath);
+	// pMaxParallelEventCount determines how many events can be callbacked in parallel. 0 means synchronous callback.
+	// pMaxFuzzWidth determines the maximum amount of indexes by which an events callback can be delayed (it is delayed
+	//               by calling events ahead of it). 0 means no fuzzing.
+	uint32_t ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParallelEventCount = 0, uint32_t pMaxFuzzWidth = 0);
 
 	void DisplayWindow();
 

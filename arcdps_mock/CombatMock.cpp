@@ -6,6 +6,10 @@
 #include "imgui.h"
 #include "json.hpp"
 
+#include <atomic>
+#include <cassert>
+#include <Windows.h>
+
 using json = nlohmann::json;
 
 void CombatMock::AddAgent(const char* pAgentName, const char* pAccountName, Prof pProfession, uint32_t pElite, uint8_t pSubgroup, uint64_t pMasterUniqueId)
@@ -508,8 +512,114 @@ void CombatMock::Execute()
 	}
 }
 
-uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
+struct ExecuteXevtcEventArguments
 {
+	const XevtcEvent* pEvent;
+	const std::vector<std::string>* pStrings;
+	const arcdps_exports* pCallbacks;
+	std::atomic_uint32_t* pExecutedEvents;
+};
+
+VOID CALLBACK ExecuteXevtcEvent(PVOID pParam, BOOLEAN pTimerOrWaitFired)
+{
+	ExecuteXevtcEventArguments* args = reinterpret_cast<ExecuteXevtcEventArguments*>(pParam);
+
+	ag source;
+	ag destination;
+	cbtevent ev;
+
+	ag* source_arg = nullptr;
+	ag* destination_arg = nullptr;
+	cbtevent* ev_arg = nullptr;
+	const char* skillname = nullptr;
+
+	if (args->pEvent->ev.present == true)
+	{
+		ev = *static_cast<const cbtevent*>(&args->pEvent->ev);
+		ev_arg = &ev;
+	}
+
+	if (args->pEvent->source_ag.present == true)
+	{
+		source.id = args->pEvent->source_ag.id;
+		source.prof = args->pEvent->source_ag.prof;
+		source.elite = args->pEvent->source_ag.elite;
+		source.self = args->pEvent->source_ag.self;
+		if (args->pEvent->source_ag.name.Index != UINT32_MAX)
+		{
+			source.name = (*args->pStrings)[args->pEvent->source_ag.name.Index - 1].c_str();
+		}
+		else
+		{
+			source.name = nullptr;
+		}
+		source.team = args->pEvent->source_ag.team;
+
+		source_arg = &source;
+	}
+
+	if (args->pEvent->destination_ag.present == true)
+	{
+		destination.id = args->pEvent->destination_ag.id;
+		destination.prof = args->pEvent->destination_ag.prof;
+		destination.elite = args->pEvent->destination_ag.elite;
+		destination.self = args->pEvent->destination_ag.self;
+		if (args->pEvent->destination_ag.name.Index != UINT32_MAX)
+		{
+			destination.name = (*args->pStrings)[args->pEvent->destination_ag.name.Index - 1].c_str();
+		}
+		else
+		{
+			destination.name = nullptr;
+		}
+		destination.team = args->pEvent->destination_ag.team;
+
+		destination_arg = &destination;
+	}
+
+	if (args->pEvent->skillname.Index != UINT32_MAX)
+	{
+		skillname = (*args->pStrings)[args->pEvent->skillname.Index - 1].c_str();
+	}
+
+	switch (args->pEvent->collector_source)
+	{
+	case XevtcEventSource::Area:
+		if (args->pCallbacks->combat != nullptr)
+		{
+			args->pCallbacks->combat(ev_arg, source_arg, destination_arg, skillname, args->pEvent->id, args->pEvent->revision);
+		}
+		break;
+	case XevtcEventSource::Local:
+		if (args->pCallbacks->combat_local != nullptr)
+		{
+			args->pCallbacks->combat_local(ev_arg, source_arg, destination_arg, skillname, args->pEvent->id, args->pEvent->revision);
+		}
+		break;
+	default:
+		LOG("Invalid event source %u", args->pEvent->collector_source);
+		break;
+	}
+
+	uint32_t old = args->pExecutedEvents->fetch_sub(1, std::memory_order_relaxed);
+	assert(old != 0);
+	free(args);
+}
+
+bool IsSelfAgentDeregister(XevtcEvent& pEvent)
+{
+	return pEvent.ev.present == false && pEvent.source_ag.elite == 0 && pEvent.source_ag.prof == 0 && pEvent.destination_ag.self != 0;
+}
+
+uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParallelEventCount, uint32_t pMaxFuzzWidth)
+{
+	if (pMaxFuzzWidth > 0)
+	{
+		uint32_t seed = timeGetTime();
+		LOG("Using seed %u", seed);
+		srand(seed);
+	}
+
 	std::string buffer;
 	buffer.reserve(128 * 1024);
 
@@ -590,85 +700,100 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath)
 		return errno;
 	}
 
-	// Sending the events
-	for (uint32_t i = 0; i < header.EventCount; i++)
+	HANDLE timerQueue = NULL;
+	timerQueue = CreateTimerQueue();
+	if (timerQueue == NULL)
 	{
-		ag source;
-		ag destination;
-		cbtevent ev;
+		LOG("CreateTimerQueue failed (%d)", GetLastError());
+		assert(false);
+	}
 
-		ag* source_arg = nullptr;
-		ag* destination_arg = nullptr;
-		cbtevent* ev_arg = nullptr;
-		const char* skillname = nullptr;
 
-		if (eventsVector[i].ev.present == true)
+	auto queuedEvents = std::make_unique<bool[]>(header.EventCount);
+	memset(queuedEvents.get(), 0x00, header.EventCount * sizeof(bool));
+	uint32_t queuedEventCount = 0;
+	std::atomic_uint32_t eventsLeft = header.EventCount;
+	bool sentFirstEvent = false;
+
+	// Sending the events
+	uint32_t globalIndex = 0;
+	while (globalIndex < header.EventCount)
+	{
+		// Use UINT64_MAX as a marker to determine if events have been sent
+		if (queuedEvents[globalIndex] == true)
 		{
-			ev = *static_cast<cbtevent*>(&eventsVector[i].ev);
-			ev_arg = &ev;
+			globalIndex++;
+			continue;
 		}
 
-		if (eventsVector[i].source_ag.present == true)
+		uint32_t fuzzSize = 0;
+		if (pMaxFuzzWidth > 0 && sentFirstEvent == true)
 		{
-			source.id = eventsVector[i].source_ag.id;
-			source.prof = eventsVector[i].source_ag.prof;
-			source.elite = eventsVector[i].source_ag.elite;
-			source.self = eventsVector[i].source_ag.self;
-			if (eventsVector[i].source_ag.name.Index != UINT32_MAX)
-			{
-				source.name = mXevtcStrings[eventsVector[i].source_ag.name.Index - 1].c_str();
-			}
-			else
-			{
-				source.name = nullptr;
-			}
-			source.team = eventsVector[i].source_ag.team;
-
-			source_arg = &source;
+			fuzzSize = rand() % (pMaxFuzzWidth + 1);
 		}
 
-		if (eventsVector[i].destination_ag.present == true)
+		uint32_t localIndex = globalIndex;
+		while ((localIndex + 1) < header.EventCount && localIndex < (globalIndex + fuzzSize))
 		{
-			destination.id = eventsVector[i].destination_ag.id;
-			destination.prof = eventsVector[i].destination_ag.prof;
-			destination.elite = eventsVector[i].destination_ag.elite;
-			destination.self = eventsVector[i].destination_ag.self;
-			if (eventsVector[i].destination_ag.name.Index != UINT32_MAX)
+			if (IsSelfAgentDeregister(eventsVector[localIndex]) == true)
 			{
-				destination.name = mXevtcStrings[eventsVector[i].destination_ag.name.Index - 1].c_str();
+				break;
 			}
-			else
-			{
-				destination.name = nullptr;
-			}
-			destination.team = eventsVector[i].destination_ag.team;
-
-			destination_arg = &destination;
+			localIndex++;
 		}
 
-		if (eventsVector[i].skillname.Index != UINT32_MAX)
+		while (queuedEvents[localIndex] == true)
 		{
-			skillname = mXevtcStrings[eventsVector[i].skillname.Index - 1].c_str();
+			assert(localIndex > globalIndex);
+			localIndex--;
 		}
+		assert(queuedEvents[localIndex] == false);
 
-		switch (eventsVector[i].collector_source)
+		ExecuteXevtcEventArguments* args = new ExecuteXevtcEventArguments;
+		args->pEvent = &eventsVector[localIndex];
+		args->pStrings = &mXevtcStrings;
+		args->pCallbacks = myCallbacks;
+		args->pExecutedEvents = &eventsLeft;
+
+		if (pMaxParallelEventCount == 0 || sentFirstEvent == false)
 		{
-		case XevtcEventSource::Area:
-			if (myCallbacks->combat != nullptr)
+			ExecuteXevtcEvent(args, TRUE);
+
+			// Addons need a reference id to know where the id range starts
+			if (eventsVector[localIndex].id != 0)
 			{
-				myCallbacks->combat(ev_arg, source_arg, destination_arg, skillname, eventsVector[i].id, eventsVector[i].revision);
+				sentFirstEvent = true;
 			}
-			break;
-		case XevtcEventSource::Local:
-			if (myCallbacks->combat_local != nullptr)
-			{
-				myCallbacks->combat_local(ev_arg, source_arg, destination_arg, skillname, eventsVector[i].id, eventsVector[i].revision);
-			}
-			break;
-		default:
-			LOG("Invalid event source %u for event %u", eventsVector[i].collector_source, i);
-			break;
 		}
+		else
+		{
+			HANDLE dummy;
+			if (CreateTimerQueueTimer(&dummy, timerQueue, &ExecuteXevtcEvent, args, 0, 0, WT_EXECUTEONLYONCE) == false)
+			{
+				LOG("CreateTimerQueueTimer failed (%d)", GetLastError());
+				assert(false);
+			}
+		}
+		queuedEvents[localIndex] = true;
+		queuedEventCount += 1;
+
+		if (pMaxParallelEventCount > 0)
+		{
+			// Send self agent deregister synchronously since arc gives addons no way to determine combat exit as
+			// a result of map exit other than looking at the deregister event (and it has id 0 so it's unordered)
+			if ((queuedEventCount % pMaxParallelEventCount) == 0 || IsSelfAgentDeregister(eventsVector[localIndex]) == true)
+			{
+				while (eventsLeft.load(std::memory_order_relaxed) > (header.EventCount - queuedEventCount))
+				{
+					Sleep(0);
+				}
+			}
+		}
+	}
+
+	while (eventsLeft.load(std::memory_order_relaxed) > 0)
+	{
+		Sleep(0);
 	}
 
 	LOG("Simulated %u events from %s", header.EventCount, pFilePath);
@@ -1071,7 +1196,7 @@ void CombatMock::DisplayActions()
 		}
 		if (ImGui::Button("Load and simulate xevtc") == true)
 		{
-			ExecuteFromXevtc(myInputFilePath);
+			ExecuteFromXevtc(myInputFilePath, 0, 0);
 		}
 		ImGui::Separator();
 
