@@ -41,7 +41,7 @@ void GUI::Display()
 	}
 
 	ImGui::SetNextWindowSize(ImVec2(600, 250), ImGuiCond_FirstUseEver);
-	if (ImGui::Begin("Event Collector", &mDisplayed) == true)
+	if (ImGui::Begin("Event Collector", &mDisplayed, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav) == true)
 	{
 		ImGui::Text("%zu events collected", mCollector.GetEventCount());
 
