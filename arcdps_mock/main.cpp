@@ -334,11 +334,6 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 		// Show options window (mirror of arcdps options)
 		{
 			ImGui::Begin("Options", nullptr, ImGuiWindowFlags_NoCollapse);
-			ImGui::Checkbox("Logs", &combatMock->showLog);
-			if (TEST_MODULE_EXPORTS.options_end != nullptr)
-			{
-				TEST_MODULE_EXPORTS.options_end();
-			}
 
 			if (TEST_MODULE_EXPORTS.options_windows != nullptr) {
 				TEST_MODULE_EXPORTS.options_windows("skills");
@@ -349,6 +344,13 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 				TEST_MODULE_EXPORTS.options_windows("Errors");
 				TEST_MODULE_EXPORTS.options_windows(nullptr);
 			}
+			
+			ImGui::Checkbox("Logs", &combatMock->showLog);
+			if (TEST_MODULE_EXPORTS.options_end != nullptr)
+			{
+				TEST_MODULE_EXPORTS.options_end();
+			}
+			
 			ImGui::End();
 		}
 
@@ -387,6 +389,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 
 	ImGui_ImplDX9_Shutdown();
 	ImGui_ImplWin32_Shutdown();
+
 	ImGui::DestroyContext();
 
 	CleanupDeviceD3D();
