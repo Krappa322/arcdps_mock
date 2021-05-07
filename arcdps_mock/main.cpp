@@ -336,12 +336,13 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 			ImGui::Begin("Options", nullptr, ImGuiWindowFlags_NoCollapse);
 
 			if (TEST_MODULE_EXPORTS.options_windows != nullptr) {
+				TEST_MODULE_EXPORTS.options_windows("bufftable");
+				TEST_MODULE_EXPORTS.options_windows("squad");
+				TEST_MODULE_EXPORTS.options_windows("dps");
 				TEST_MODULE_EXPORTS.options_windows("skills");
 				TEST_MODULE_EXPORTS.options_windows("metrics");
-				TEST_MODULE_EXPORTS.options_windows("dps");
+				TEST_MODULE_EXPORTS.options_windows("error");
 				TEST_MODULE_EXPORTS.options_windows("log");
-				TEST_MODULE_EXPORTS.options_windows("bufftable");
-				TEST_MODULE_EXPORTS.options_windows("Errors");
 				TEST_MODULE_EXPORTS.options_windows(nullptr);
 			}
 			
