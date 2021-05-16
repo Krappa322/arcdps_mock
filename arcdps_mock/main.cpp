@@ -229,7 +229,11 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 
 	HMODULE selfHandle = GetModuleHandle(NULL);
 	HMODULE testModuleHandle = LoadLibraryA(pModulePath);
-	assert(testModuleHandle != NULL);
+	if (testModuleHandle == NULL)
+	{
+		fprintf(stderr, "Failed loading '%s' - %u", pModulePath, GetLastError());
+		assert(false);
+	}
 
 	auto get_init_addr = reinterpret_cast<GetInitAddrSignature>(GetProcAddress(testModuleHandle, "get_init_addr"));
 	assert(get_init_addr != nullptr);
