@@ -21,6 +21,7 @@ extern "C" __declspec(dllexport) void e5(ImVec4** colors);
 extern "C" __declspec(dllexport) uint64_t e6();
 extern "C" __declspec(dllexport) uint64_t e7();
 extern "C" __declspec(dllexport) void e8(const char* pString);
+extern "C" __declspec(dllexport) void e9(cbtevent* pEvent, uint32_t pSignature);
 
 // Data
 static LPDIRECT3D9              g_pD3D = NULL;
@@ -170,6 +171,11 @@ uint64_t e7()
 void e8(const char* pString)
 {
 	combatMock->e8LogLine(pString);
+}
+
+void e9(cbtevent*, uint32_t)
+{
+	return; // Ignore evtc log from addon
 }
 
 const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
