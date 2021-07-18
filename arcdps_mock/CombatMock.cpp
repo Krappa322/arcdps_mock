@@ -1236,6 +1236,11 @@ void CombatMock::DisplayLog()
 			}
 		}
 
+		if (ImGui::Button("Clear both logs") == true) {
+			e3_log.clear();
+			e8_log.clear();
+		}
+
 		ImGui::EndPopup();
 	}
 
