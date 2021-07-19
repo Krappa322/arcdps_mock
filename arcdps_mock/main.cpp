@@ -21,6 +21,7 @@ extern "C" __declspec(dllexport) void e5(ImVec4** colors);
 extern "C" __declspec(dllexport) uint64_t e6();
 extern "C" __declspec(dllexport) uint64_t e7();
 extern "C" __declspec(dllexport) void e8(const char* pString);
+extern "C" __declspec(dllexport) void e9(cbtevent* pEvent, uint32_t pSignature);
 
 // Data
 static LPDIRECT3D9              g_pD3D = NULL;
@@ -172,6 +173,11 @@ void e8(const char* pString)
 	combatMock->e8LogLine(pString);
 }
 
+void e9(cbtevent*, uint32_t)
+{
+	return; // Ignore evtc log from addon
+}
+
 const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
 
 
@@ -229,7 +235,11 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 
 	HMODULE selfHandle = GetModuleHandle(NULL);
 	HMODULE testModuleHandle = LoadLibraryA(pModulePath);
-	assert(testModuleHandle != NULL);
+	if (testModuleHandle == NULL)
+	{
+		fprintf(stderr, "Failed loading '%s' - %u", pModulePath, GetLastError());
+		assert(false);
+	}
 
 	auto get_init_addr = reinterpret_cast<GetInitAddrSignature>(GetProcAddress(testModuleHandle, "get_init_addr"));
 	assert(get_init_addr != nullptr);
