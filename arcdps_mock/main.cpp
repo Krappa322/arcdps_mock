@@ -246,9 +246,6 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	auto get_release_addr = reinterpret_cast<GetReleaseAddrSignature>(GetProcAddress(testModuleHandle, "get_release_addr"));
 	assert(get_release_addr != nullptr);
 
-	ID3D11Device* pDevice;
-	g_pSwapChain->GetDevice( __uuidof(pDevice), (void**)&pDevice);
-
 	ModInitSignature mod_init = reinterpret_cast<ModInitSignature>(get_init_addr(MOCK_VERSION, ImGui::GetCurrentContext(), g_pSwapChain, selfHandle, malloc, free, 11));
 	assert(mod_init != nullptr);
 	arcdps_exports* temp_exports = mod_init();
