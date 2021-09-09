@@ -178,7 +178,7 @@ void e9(cbtevent*, uint32_t)
 	return; // Ignore evtc log from addon
 }
 
-const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
+const char* MOCK_VERSION = "20210909.ARCDPS_MOCK.0.1";
 
 
 int Run(const char* pModulePath, const char* pMockFilePath)
