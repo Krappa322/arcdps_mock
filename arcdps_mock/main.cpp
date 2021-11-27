@@ -237,7 +237,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	HMODULE testModuleHandle = LoadLibraryA(pModulePath);
 	if (testModuleHandle == NULL)
 	{
-		fprintf(stderr, "Failed loading '%s' - %u", pModulePath, GetLastError());
+		fprintf(stderr, "Failed loading '%s' - %u\n", pModulePath, GetLastError());
 		assert(false);
 	}
 
