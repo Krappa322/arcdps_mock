@@ -4,9 +4,11 @@
 
 #include "../imgui/imgui.h"
 #include "../imgui/backends/imgui_impl_dx9.h"
+#include "../imgui/backends/imgui_impl_dx11.h"
 #include "../imgui/backends/imgui_impl_win32.h"
 
 #include <d3d9.h>
+#include <d3d11.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <iostream>
@@ -24,14 +26,31 @@ extern "C" __declspec(dllexport) void e8(const char* pString);
 extern "C" __declspec(dllexport) void e9(cbtevent* pEvent, uint32_t pSignature);
 
 // Data
-static LPDIRECT3D9              g_pD3D = NULL;
-static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;
+static int						g_DxMode = 9;
+static LPDIRECT3D9              g_pD3D9 = NULL;
+static LPDIRECT3DDEVICE9        g_pd3dDevice9 = NULL;
 static D3DPRESENT_PARAMETERS    g_d3dpp = {};
+
+static ID3D11Device*            g_pd3d11Device = NULL;
+static ID3D11DeviceContext*     g_pd3d11DeviceContext = NULL;
+static IDXGISwapChain*          g_pSwapChain = NULL;
+static ID3D11RenderTargetView*  g_mainRenderTargetView = NULL;
+
+static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 // Forward declarations of helper functions
 bool CreateDeviceD3D(HWND hWnd);
+bool CreateDeviceD3D9(HWND hWnd);
+bool CreateDeviceD3D11(HWND hWnd);
+void CreateRenderTarget();
 void CleanupDeviceD3D();
+void CleanupDeviceD3D9();
+void CleanupDeviceD3D11();
+void CleanupRenderTarget();
 void ResetDevice();
+void RenderFrame();
+void RenderFrame9();
+void RenderFrame11();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static arcdps_exports TEST_MODULE_EXPORTS;
@@ -178,7 +197,7 @@ void e9(cbtevent*, uint32_t)
 	return; // Ignore evtc log from addon
 }
 
-const char* MOCK_VERSION = "ARCDPS_MOCK 0.1";
+const char* MOCK_VERSION = "20210909.ARCDPS_MOCK.0.1";
 
 
 int Run(const char* pModulePath, const char* pMockFilePath)
@@ -214,9 +233,10 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hwnd);
-	ImGui_ImplDX9_Init(g_pd3dDevice);
-
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	if (g_DxMode == 9)
+		ImGui_ImplDX9_Init(g_pd3dDevice9);
+	if (g_DxMode == 11)
+		ImGui_ImplDX11_Init(g_pd3d11Device, g_pd3d11DeviceContext);
 
 	// Load Fonts
 	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
@@ -246,7 +266,7 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 	auto get_release_addr = reinterpret_cast<GetReleaseAddrSignature>(GetProcAddress(testModuleHandle, "get_release_addr"));
 	assert(get_release_addr != nullptr);
 
-	ModInitSignature mod_init = reinterpret_cast<ModInitSignature>(get_init_addr(MOCK_VERSION, ImGui::GetCurrentContext(), g_pd3dDevice, selfHandle, malloc, free, 9));
+	ModInitSignature mod_init = get_init_addr(MOCK_VERSION, ImGui::GetCurrentContext(), (g_DxMode == 9) ? (void*)g_pd3dDevice9 : (void*)g_pSwapChain, selfHandle, malloc, free, g_DxMode);
 	assert(mod_init != nullptr);
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
@@ -335,7 +355,10 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 		}
 
 		// Start the Dear ImGui frame
-		ImGui_ImplDX9_NewFrame();
+		if (g_DxMode == 9)
+			ImGui_ImplDX9_NewFrame();
+		if (g_DxMode == 11)
+			ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
@@ -376,29 +399,18 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 
 		// Rendering
 		ImGui::EndFrame();
-		g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-		g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-		D3DCOLOR clear_col_dx = D3DCOLOR_RGBA((int)(clear_color.x * 255.0f), (int)(clear_color.y * 255.0f), (int)(clear_color.z * 255.0f), (int)(clear_color.w * 255.0f));
-		g_pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, clear_col_dx, 1.0f, 0);
-		if (g_pd3dDevice->BeginScene() >= 0)
-		{
-			ImGui::Render();
-			ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-			g_pd3dDevice->EndScene();
-		}
-		HRESULT result = g_pd3dDevice->Present(NULL, NULL, NULL, NULL);
 
-		// Handle loss of D3D9 device
-		if (result == D3DERR_DEVICELOST && g_pd3dDevice->TestCooperativeLevel() == D3DERR_DEVICENOTRESET)
-			ResetDevice();
+		RenderFrame();
 	}
 
 	ModReleaseSignature mod_release = reinterpret_cast<ModReleaseSignature>(get_release_addr());
 	assert(mod_release != nullptr);
 	mod_release();
 
-	ImGui_ImplDX9_Shutdown();
+	if (g_DxMode == 9)
+		ImGui_ImplDX9_Shutdown();
+	if (g_DxMode == 11)
+		ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 
 	ImGui::DestroyContext();
@@ -413,17 +425,43 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 // Main code
 int main(int pArgumentCount, const char** pArgumentVector)
 {
-	if (pArgumentCount <= 1)
+	const char* modulePath = nullptr;
+	const char* mockFilePath = nullptr;
+
+	int num = 0;
+	// start with 1, first value is always the executable
+	for (int i = 1; i < pArgumentCount; ++i)
+	{
+		const char* string = pArgumentVector[i];
+
+		if (std::string(string) == "-dx11")
+		{
+			g_DxMode = 11;
+			continue;
+		}
+		if (std::string(string) == "-dx9")
+		{
+			g_DxMode = 9;
+			continue;
+		}
+		if (num == 0)
+		{
+			modulePath = string;
+			++num;
+			continue;
+		}
+		if (num == 1)
+		{
+			mockFilePath = string;
+			++num;
+			continue;
+		}
+	}
+
+	if (num == 0) 
 	{
 		assert(false && "Too few arguments sent");
 		return 1;
-	}
-
-	const char* modulePath = pArgumentVector[1];
-	const char* mockFilePath = nullptr;
-	if (pArgumentCount >= 3)
-	{
-		mockFilePath = pArgumentVector[2];
 	}
 
 	// create arcdps settings directoy
@@ -440,7 +478,19 @@ int main(int pArgumentCount, const char** pArgumentVector)
 // Helper functions
 bool CreateDeviceD3D(HWND hWnd)
 {
-	if ((g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)) == NULL)
+	if (g_DxMode == 9)
+	{
+		return CreateDeviceD3D9(hWnd);
+	}
+	if (g_DxMode == 11)
+	{
+		return CreateDeviceD3D11(hWnd);
+	}
+}
+
+bool CreateDeviceD3D9(HWND hWnd)
+{
+	if ((g_pD3D9 = Direct3DCreate9(D3D_SDK_VERSION)) == NULL)
 		return false;
 
 	// Create the D3DDevice
@@ -452,25 +502,139 @@ bool CreateDeviceD3D(HWND hWnd)
 	g_d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 	g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;           // Present with vsync
 	//g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;   // Present without vsync, maximum unthrottled framerate
-	if (g_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &g_d3dpp, &g_pd3dDevice) < 0)
+	if (g_pD3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &g_d3dpp, &g_pd3dDevice9) < 0)
 		return false;
 
 	return true;
 }
 
+bool CreateDeviceD3D11(HWND hWnd)
+{
+	// Setup swap chain
+    DXGI_SWAP_CHAIN_DESC sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.BufferCount = 2;
+    sd.BufferDesc.Width = 0;
+    sd.BufferDesc.Height = 0;
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferDesc.RefreshRate.Numerator = 60;
+    sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.OutputWindow = hWnd;
+    sd.SampleDesc.Count = 1;
+    sd.SampleDesc.Quality = 0;
+    sd.Windowed = TRUE;
+    sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+
+    UINT createDeviceFlags = 0;
+    //createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    D3D_FEATURE_LEVEL featureLevel;
+    const D3D_FEATURE_LEVEL featureLevelArray[2] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0, };
+    if (D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3d11Device, &featureLevel, &g_pd3d11DeviceContext) != S_OK)
+        return false;
+
+    CreateRenderTarget();
+    return true;
+}
+
+void CreateRenderTarget()
+{
+	if (g_DxMode == 11)
+	{
+		ID3D11Texture2D* pBackBuffer;
+		g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+		g_pd3d11Device->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
+		pBackBuffer->Release();
+	}
+}
+
 void CleanupDeviceD3D()
 {
-	if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
-	if (g_pD3D) { g_pD3D->Release(); g_pD3D = NULL; }
+	if (g_DxMode == 9)
+	{
+		CleanupDeviceD3D9();
+	}
+	else if (g_DxMode == 11)
+	{
+		CleanupDeviceD3D11();
+	}
+}
+
+void CleanupDeviceD3D9()
+{
+	if (g_pd3dDevice9) { g_pd3dDevice9->Release(); g_pd3dDevice9 = NULL; }
+	if (g_pD3D9) { g_pD3D9->Release(); g_pD3D9 = NULL; }
+}
+
+void CleanupDeviceD3D11()
+{
+	CleanupRenderTarget();
+    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = NULL; }
+    if (g_pd3d11DeviceContext) { g_pd3d11DeviceContext->Release(); g_pd3d11DeviceContext = NULL; }
+    if (g_pd3d11Device) { g_pd3d11Device->Release(); g_pd3d11Device = NULL; }
+}
+
+void CleanupRenderTarget()
+{
+	if (g_DxMode == 11)
+	{
+		if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = NULL; }
+	}
 }
 
 void ResetDevice()
 {
 	ImGui_ImplDX9_InvalidateDeviceObjects();
-	HRESULT hr = g_pd3dDevice->Reset(&g_d3dpp);
+	HRESULT hr = g_pd3dDevice9->Reset(&g_d3dpp);
 	if (hr == D3DERR_INVALIDCALL)
 		IM_ASSERT(0);
 	ImGui_ImplDX9_CreateDeviceObjects();
+}
+
+void RenderFrame()
+{
+	if (g_DxMode == 9)
+	{
+		RenderFrame9();
+	}
+	else if (g_DxMode == 11)
+	{
+		RenderFrame11();
+	}
+}
+
+void RenderFrame9()
+{
+	g_pd3dDevice9->SetRenderState(D3DRS_ZENABLE, FALSE);
+	g_pd3dDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	g_pd3dDevice9->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+	
+	D3DCOLOR clear_col_dx = D3DCOLOR_RGBA((int)(clear_color.x * 255.0f), (int)(clear_color.y * 255.0f), (int)(clear_color.z * 255.0f), (int)(clear_color.w * 255.0f));
+	g_pd3dDevice9->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, clear_col_dx, 1.0f, 0);
+	if (g_pd3dDevice9->BeginScene() >= 0)
+	{
+		ImGui::Render();
+		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
+		g_pd3dDevice9->EndScene();
+	}
+	HRESULT result = g_pd3dDevice9->Present(NULL, NULL, NULL, NULL);
+
+	// Handle loss of D3D9 device
+	if (result == D3DERR_DEVICELOST && g_pd3dDevice9->TestCooperativeLevel() == D3DERR_DEVICENOTRESET)
+		ResetDevice();
+}
+
+void RenderFrame11()
+{
+	ImGui::Render();
+	const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
+    g_pd3d11DeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
+    g_pd3d11DeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+    g_pSwapChain->Present(1, 0); // Present with vsync
+    //g_pSwapChain->Present(0, 0); // Present without vsync
 }
 
 // Forward declare message handler from imgui_impl_win32.cpp
@@ -494,12 +658,18 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_SIZE:
-		if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
+		if (g_DxMode == 9 && g_pd3dDevice9 != NULL && wParam != SIZE_MINIMIZED)
 		{
 			g_d3dpp.BackBufferWidth = LOWORD(lParam);
 			g_d3dpp.BackBufferHeight = HIWORD(lParam);
 			ResetDevice();
 		}
+		if (g_DxMode == 11 && g_pd3d11Device != NULL && wParam != SIZE_MINIMIZED)
+        {
+            CleanupRenderTarget();
+            g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
+            CreateRenderTarget();
+        }
 		return 0;
 	case WM_SYSCOMMAND:
 		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
