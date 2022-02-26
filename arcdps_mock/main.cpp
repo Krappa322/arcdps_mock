@@ -189,7 +189,13 @@ uint64_t e7()
 
 void e8(const char* pString)
 {
-	combatMock->e8LogLine(pString);
+	if (!pString) {
+		combatMock->e8LogLine("(null)");
+	}
+	else 
+	{
+		combatMock->e8LogLine(pString);
+	}
 }
 
 void e9(cbtevent*, uint32_t)
@@ -200,7 +206,7 @@ void e9(cbtevent*, uint32_t)
 const char* MOCK_VERSION = "20210909.ARCDPS_MOCK.0.1";
 
 
-int Run(const char* pModulePath, const char* pMockFilePath)
+int Run(const char* pModulePath, const char* pMockFilePath, const char* pSelfPath)
 {
 	// Create application window
 	//ImGui_ImplWin32_EnableDpiAwareness();
@@ -362,33 +368,94 @@ int Run(const char* pModulePath, const char* pMockFilePath)
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0.f, 0.f });
-
 		// Show options window (mirror of arcdps options)
 		{
-			ImGui::Begin("Options", nullptr, ImGuiWindowFlags_NoCollapse);
+			ImGui::Begin("Options", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			if (TEST_MODULE_EXPORTS.options_windows != nullptr) {
-				TEST_MODULE_EXPORTS.options_windows("bufftable");
-				TEST_MODULE_EXPORTS.options_windows("squad");
-				TEST_MODULE_EXPORTS.options_windows("dps");
-				TEST_MODULE_EXPORTS.options_windows("skills");
-				TEST_MODULE_EXPORTS.options_windows("metrics");
-				TEST_MODULE_EXPORTS.options_windows("error");
-				TEST_MODULE_EXPORTS.options_windows("log");
-				TEST_MODULE_EXPORTS.options_windows(nullptr);
-			}
-			
-			ImGui::Checkbox("Logs", &combatMock->showLog);
-			if (TEST_MODULE_EXPORTS.options_end != nullptr)
+			if (ImGui::BeginTabBar("tabBar"))
 			{
-				TEST_MODULE_EXPORTS.options_end();
+				if (ImGui::BeginTabItem("Interface")) 
+				{
+					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0.f, 0.f });
+
+					ImGui::TextDisabled("Windows");
+
+					if (TEST_MODULE_EXPORTS.options_windows != nullptr) 
+					{
+						TEST_MODULE_EXPORTS.options_windows("squad");
+						TEST_MODULE_EXPORTS.options_windows("dps");
+						TEST_MODULE_EXPORTS.options_windows("skills");
+						TEST_MODULE_EXPORTS.options_windows("metrics");
+						TEST_MODULE_EXPORTS.options_windows("error");
+						TEST_MODULE_EXPORTS.options_windows(nullptr);
+					}
+
+					ImGui::PopStyleVar();
+
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem("Extensions"))
+				{
+					if (ImGui::BeginTabBar("ExtensionsTabBar"))
+					{
+						if (ImGui::BeginTabItem(TEST_MODULE_EXPORTS.out_name))
+						{
+							if (TEST_MODULE_EXPORTS.options_end != nullptr)
+							{
+								TEST_MODULE_EXPORTS.options_end();
+							}
+
+							ImGui::EndTabItem();
+						}
+
+						ImGui::EndTabBar();
+					}
+
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem("About"))
+				{
+					ImGui::Text("arcdps_mock");
+
+					ImGui::PushStyleColor(ImGuiCol_TextDisabled, 0xFFA3A3A3);
+
+					ImGui::Indent();
+					ImGui::TextDisabled("path:");
+					ImGui::Indent();
+					ImGui::TextDisabled("%s", pSelfPath);
+					ImGui::Unindent();
+					ImGui::TextDisabled("mock file:");
+					ImGui::Indent();
+					ImGui::TextDisabled("%s", (pMockFilePath != nullptr) ? pMockFilePath : "None");
+					ImGui::Unindent();
+					ImGui::Checkbox("Logs", &combatMock->showLog);
+					ImGui::Unindent();
+
+					ImGui::Text("extension");
+					ImGui::Indent();
+					ImGui::TextDisabled("%s: %s", TEST_MODULE_EXPORTS.out_name, TEST_MODULE_EXPORTS.out_build);
+					ImGui::Indent();
+					ImGui::TextDisabled("%s", pModulePath);
+					ImGui::Unindent();
+					ImGui::Unindent();
+
+					ImGui::Text("directx");
+					ImGui::Indent();
+					ImGui::TextDisabled("%d", g_DxMode);
+					ImGui::Unindent();
+
+					ImGui::PopStyleColor();
+
+					ImGui::EndTabItem();
+				}
+
+				ImGui::EndTabBar();
 			}
-			
+
 			ImGui::End();
 		}
-
-		ImGui::PopStyleVar();
 
 		combatMock->DisplayWindow();
 
@@ -427,6 +494,7 @@ int main(int pArgumentCount, const char** pArgumentVector)
 {
 	const char* modulePath = nullptr;
 	const char* mockFilePath = nullptr;
+	const char* selfPath = pArgumentVector[0];
 
 	int num = 0;
 	// start with 1, first value is always the executable
@@ -472,7 +540,7 @@ int main(int pArgumentCount, const char** pArgumentVector)
 		assert(false && "Error creating arcdps directory");
 	}
 
-	return Run(modulePath, mockFilePath);
+	return Run(modulePath, mockFilePath, selfPath);
 }
 
 // Helper functions
