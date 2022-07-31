@@ -72,6 +72,9 @@ struct ArcModifiers
 // arcdps file log
 void e3(const char* pString)
 {
+	if (!combatMock) {
+		return;
+	}
 	combatMock->e3LogLine(pString);
 }
 
@@ -189,6 +192,9 @@ uint64_t e7()
 
 void e8(const char* pString)
 {
+	if (!combatMock) {
+		return;
+	}
 	if (!pString) {
 		combatMock->e8LogLine("(null)");
 	}
