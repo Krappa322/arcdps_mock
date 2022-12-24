@@ -4,12 +4,12 @@
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>"D:\Guild Wars 2\bin64\d3d9_arcdps_killproof_me.dll" -dx11</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>"C:\Users\me\projects\arcdps-squad-notes-plugin\x64\Release\d3d9_arcdps_squad_notes.dll" -dx11</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>"D:\Guild Wars 2\bin64\d3d9_arcdps_killproof_me.dll" -dx11</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>"C:\Users\me\projects\arcdps-squad-notes-plugin\x64\Debug\d3d9_arcdps_squad_notes.dll" -dx11</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>$(TargetDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
