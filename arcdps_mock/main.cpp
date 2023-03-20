@@ -73,7 +73,8 @@ struct ArcModifiers
 }
 
 // arcdps config path
-const wchar_t* e0() {
+const wchar_t* e0() 
+{
 	return e0ConfigPath.c_str();
 }
 
