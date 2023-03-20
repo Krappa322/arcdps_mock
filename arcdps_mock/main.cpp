@@ -509,7 +509,7 @@ int main(int pArgumentCount, const char** pArgumentVector)
 {
 	const char* modulePath = nullptr;
 	const char* mockFilePath = nullptr;
-	const char* selfPath = pArgumentVector[0];
+	const char* selfPathString = pArgumentVector[0];
 
 	int num = 0;
 	// start with 1, first value is always the executable
@@ -555,11 +555,14 @@ int main(int pArgumentCount, const char** pArgumentVector)
 		assert(false && "Error creating arcdps directory");
 	}
 
-	std::string selfPathString(selfPath);
-	std::string utf8ConfigPath(selfPathString.substr(0, selfPathString.find_last_of("\\")) + "\\addons\\arcdps");
-	e0ConfigPath = std::filesystem::path(utf8ConfigPath).wstring();
+	std::filesystem::path selfPath(selfPathString);
+	selfPath.remove_filename();
+	selfPath.append("addons");
+	selfPath.append("arcdps");
+	selfPath.append("arcdps.ini");
+	e0ConfigPath = selfPath.wstring();
 
-	return Run(modulePath, mockFilePath, selfPath);
+	return Run(modulePath, mockFilePath, selfPathString);
 }
 
 // Helper functions
