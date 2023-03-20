@@ -14,10 +14,12 @@
 #include <iostream>
 #include <memory>
 #include <tchar.h>
+#include <filesystem>
 
 #include "arcdps_structs.h"
 
 
+extern "C" __declspec(dllexport) const wchar_t* e0();
 extern "C" __declspec(dllexport) void e3(const char* pString);
 extern "C" __declspec(dllexport) void e5(ImVec4** colors);
 extern "C" __declspec(dllexport) uint64_t e6();
@@ -53,6 +55,7 @@ void RenderFrame9();
 void RenderFrame11();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+static std::wstring e0ConfigPath;
 static arcdps_exports TEST_MODULE_EXPORTS;
 static std::unique_ptr<CombatMock> combatMock;
 
@@ -67,6 +70,11 @@ struct ArcModifiers
 	uint16_t Fill = 0;
 };
 #pragma pack(pop)
+}
+
+// arcdps config path
+const wchar_t* e0() {
+	return e0ConfigPath.c_str();
 }
 
 // arcdps file log
@@ -545,6 +553,10 @@ int main(int pArgumentCount, const char** pArgumentVector)
 	if (!(CreateDirectoryA("addons\\arcdps\\", NULL) || ERROR_ALREADY_EXISTS == GetLastError())) {
 		assert(false && "Error creating arcdps directory");
 	}
+
+	std::string selfPathString(selfPath);
+	std::string utf8ConfigPath(selfPathString.substr(0, selfPathString.find_last_of("\\")) + "\\addons\\arcdps");
+	e0ConfigPath = std::filesystem::path(utf8ConfigPath).wstring();
 
 	return Run(modulePath, mockFilePath, selfPath);
 }
