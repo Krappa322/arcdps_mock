@@ -22,6 +22,7 @@ private:
 
 		uint64_t UniqueId = 0;
 		uint16_t InstanceId = 0;
+		bool removed = false;
 	};
 
 	enum class CombatEventType : int

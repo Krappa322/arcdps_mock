@@ -297,7 +297,9 @@ void CombatMock::Execute()
 		ag destination = {};
 		FillAgentEvent(agent, mySelfId, source, destination);
 
-		source.prof = static_cast<Prof>(1); // indicates this is an agent registration event
+		if (!agent.removed) {
+			source.prof = static_cast<Prof>(1); // indicates this is an agent registration event
+		}
 		source.elite = 0; // indicates this is an agent registration event
 
 		if (myCallbacks->combat != nullptr)
@@ -370,6 +372,7 @@ void CombatMock::Execute()
 			{
 				combatEvent.dst_agent = destinationAgent->UniqueId;
 				combatEvent.dst_instid = destinationAgent->InstanceId;
+			
 			}
 			else
 			{
@@ -961,6 +964,8 @@ void CombatMock::DisplayAgents()
 			ImGui::TableNextColumn();
 			if (ImGui::SmallButton("remove") == true)
 			{
+				iter->removed = true;
+				Execute();
 				iter = myAgents.erase(iter);
 			}
 			else
