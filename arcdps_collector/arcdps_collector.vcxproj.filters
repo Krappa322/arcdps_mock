@@ -24,12 +24,6 @@
     <ClCompile Include="Collector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\arcdps-extension\arcdps_structs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\arcdps-extension\Widgets.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -38,13 +32,7 @@
     <ClInclude Include="Collector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\arcdps-extension\arcdps_structs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\arcdps-extension\map.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\arcdps-extension\Widgets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\xevtc\Xevtc.h">
