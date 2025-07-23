@@ -3,12 +3,12 @@
 #include "arcdps_structs.h"
 #include "Log.h"
 #include "Xevtc.h"
-#include "imgui.h"
-#include "json.hpp"
 
+#include <imgui/imgui.h>
 #include <atomic>
 #include <cassert>
 #include <Windows.h>
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 

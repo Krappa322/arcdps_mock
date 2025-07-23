@@ -21,13 +21,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -48,6 +48,15 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -88,14 +97,6 @@
   <ItemGroup>
     <ClCompile Include="..\arcdps-extension\arcdps_structs.cpp" />
     <ClCompile Include="..\arcdps-extension\Widgets.cpp" />
-    <ClCompile Include="..\imgui\backends\imgui_impl_dx11.cpp" />
-    <ClCompile Include="..\imgui\backends\imgui_impl_dx9.cpp" />
-    <ClCompile Include="..\imgui\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="..\imgui\imgui.cpp" />
-    <ClCompile Include="..\imgui\imgui_demo.cpp" />
-    <ClCompile Include="..\imgui\imgui_draw.cpp" />
-    <ClCompile Include="..\imgui\imgui_tables.cpp" />
-    <ClCompile Include="..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\log\Log.cpp" />
     <ClCompile Include="CombatMock.cpp" />
     <ClCompile Include="main.cpp" />
@@ -104,12 +105,6 @@
     <ClInclude Include="..\arcdps-extension\arcdps_structs.h" />
     <ClInclude Include="..\arcdps-extension\map.h" />
     <ClInclude Include="..\arcdps-extension\Widgets.h" />
-    <ClInclude Include="..\imgui\backends\imgui_impl_dx11.h" />
-    <ClInclude Include="..\imgui\backends\imgui_impl_dx9.h" />
-    <ClInclude Include="..\imgui\backends\imgui_impl_win32.h" />
-    <ClInclude Include="..\imgui\imgui.h" />
-    <ClInclude Include="..\imgui\imgui_internal.h" />
-    <ClInclude Include="..\json\json.hpp" />
     <ClInclude Include="CombatMock.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

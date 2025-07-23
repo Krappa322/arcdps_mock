@@ -1,6 +1,3 @@
-[submodule "imgui"]
-	path = imgui
-	url = https://github.com/ocornut/imgui
 [submodule "arcdps-extension"]
 	path = arcdps-extension
 	url = https://github.com/knoxfighter/arcdps-extension

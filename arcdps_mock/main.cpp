@@ -2,15 +2,13 @@
 
 #include "CombatMock.h"
 
-#include "../imgui/imgui.h"
-#include "../imgui/backends/imgui_impl_dx9.h"
-#include "../imgui/backends/imgui_impl_dx11.h"
-#include "../imgui/backends/imgui_impl_win32.h"
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_dx9.h>
+#include <imgui/imgui_impl_dx11.h>
+#include <imgui/imgui_impl_win32.h>
 
 #include <d3d9.h>
 #include <d3d11.h>
-#define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
 #include <iostream>
 #include <memory>
 #include <tchar.h>
@@ -576,6 +574,7 @@ bool CreateDeviceD3D(HWND hWnd)
 	{
 		return CreateDeviceD3D11(hWnd);
 	}
+	throw std::runtime_error("tried to create invalid dx mode device");
 }
 
 bool CreateDeviceD3D9(HWND hWnd)

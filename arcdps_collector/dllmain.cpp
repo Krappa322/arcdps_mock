@@ -3,8 +3,6 @@
 #include "GUI.h"
 #include "Log.h"
 
-#include "imgui.h"
-
 #include <atomic>
 #include <mutex>
 
@@ -13,6 +11,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <Windows.h>
+#include <imgui/imgui.h>
 
 /* proto/globals */
 void dll_init(HANDLE pModule);
