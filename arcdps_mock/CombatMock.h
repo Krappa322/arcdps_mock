@@ -1,6 +1,6 @@
 #pragma once
 
-#include "arcdps_structs.h"
+#include <ArcdpsExtension/arcdps_structs.h>
 
 #include <list>
 #include <map>

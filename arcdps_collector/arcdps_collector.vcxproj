@@ -87,6 +87,7 @@
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\imgui\;..\json\;..\arcdps-extension\;..\log\;..\xevtc\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -104,6 +105,7 @@
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\imgui\;..\json\;..\arcdps-extension\;..\log\;..\xevtc\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -123,6 +125,7 @@
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\imgui\;..\json\;..\arcdps-extension\;..\log\;..\xevtc\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,14 +137,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GUI.cpp" />
-    <ClInclude Include="..\arcdps-extension\arcdps_structs.h" />
     <ClInclude Include="..\arcdps-extension\map.h" />
-    <ClInclude Include="..\arcdps-extension\Widgets.h" />
     <ClInclude Include="GUI.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\arcdps-extension\arcdps_structs.cpp" />
-    <ClCompile Include="..\arcdps-extension\Widgets.cpp" />
     <ClCompile Include="..\log\Log.cpp" />
     <ClCompile Include="Collector.cpp" />
     <ClCompile Include="dllmain.cpp" />

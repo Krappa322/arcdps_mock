@@ -1,6 +1,6 @@
 #include "CombatMock.h"
 
-#include "arcdps_structs.h"
+#include <ArcdpsExtension/arcdps_structs.h>
 #include "Log.h"
 #include "Xevtc.h"
 
@@ -425,8 +425,8 @@ void CombatMock::Execute()
 				combatEvent.iff = IFF_FRIEND;
 			}
 
-			combatEvent.is_activation = 0;
-			combatEvent.is_buffremove = 0;
+			combatEvent.is_activation = ACTV_NONE;
+			combatEvent.is_buffremove = CBTB_NONE;
 			combatEvent.is_ninety = 1; // simulate as if everyone is full hp
 			combatEvent.is_fifty = 0; // simulate as if everyone is full hp
 			combatEvent.is_moving = 0;

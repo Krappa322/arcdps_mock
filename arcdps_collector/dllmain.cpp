@@ -1,4 +1,3 @@
-#include "arcdps_structs.h"
 #include "Collector.h"
 #include "GUI.h"
 #include "Log.h"
@@ -12,16 +11,17 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <imgui/imgui.h>
+#include <ArcdpsExtension/arcdps_structs.h>
 
 /* proto/globals */
 void dll_init(HANDLE pModule);
 void dll_exit();
 arcdps_exports* mod_init();
 uintptr_t mod_release();
-uintptr_t mod_imgui(uint32_t pNotCharselOrLoading);
-uintptr_t mod_options_end();
-uintptr_t mod_combat(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision);
-uintptr_t mod_combat_local(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision);
+void mod_imgui(uint32_t pNotCharselOrLoading, uint32_t hide_if_combat_or_ooc);
+void mod_options_end();
+void mod_combat(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision);
+void mod_combat_local(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision);
 
 static MallocSignature ARCDPS_MALLOC = nullptr;
 static FreeSignature ARCDPS_FREE = nullptr;
@@ -133,24 +133,22 @@ uintptr_t mod_release()
 	return 0;
 }
 
-uintptr_t mod_imgui(uint32_t pNotCharacterSelectionOrLoading)
+void mod_imgui(uint32_t pNotCharacterSelectionOrLoading, uint32_t hide_if_combat_or_ooc)
 {
 	if (pNotCharacterSelectionOrLoading == 0)
 	{
-		return 0;
+		return;
 	}
 
 	GUI_CONTEXT.Display();
-	return 0;
 }
 
-uintptr_t mod_options_end()
+void mod_options_end()
 {
 	GUI_CONTEXT.DisplayOptions();
-	return 0;
 }
 
-uintptr_t mod_combat(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision)
+void mod_combat(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision)
 {
 	uint32_t seq = NEXT_EVENT_SEQ.fetch_add(1, std::memory_order_relaxed);
 	COLLECTOR.Add(
@@ -162,10 +160,9 @@ uintptr_t mod_combat(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, 
 		pSkillname,
 		pId,
 		pRevision);
-	return 0;
 }
 
-uintptr_t mod_combat_local(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision)
+void mod_combat_local(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationAgent, const char* pSkillname, uint64_t pId, uint64_t pRevision)
 {
 	uint32_t seq = NEXT_EVENT_SEQ.fetch_add(1, std::memory_order_relaxed);
 	COLLECTOR.Add(
@@ -177,5 +174,4 @@ uintptr_t mod_combat_local(cbtevent* pEvent, ag* pSourceAgent, ag* pDestinationA
 		pSkillname,
 		pId,
 		pRevision);
-	return 0;
 }

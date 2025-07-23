@@ -11,6 +11,8 @@
 		"win32-binding"
 	  ]
 	},
-	"nlohmann-json"
+	"nlohmann-json",
+	"arcdps-extension",
+	"magic-enum"
   ]
 }
