@@ -3,13 +3,11 @@
 #include "CombatMock.h"
 
 #include <imgui/imgui.h>
-#include <imgui/imgui_impl_dx9.h>
 #include <imgui/imgui_impl_dx11.h>
 #include <imgui/imgui_impl_win32.h>
 
 #include <magic_enum/magic_enum.hpp>
 
-#include <d3d9.h>
 #include <d3d11.h>
 #include <iostream>
 #include <memory>
@@ -28,10 +26,7 @@ extern "C" __declspec(dllexport) void e8(const char* pString);
 extern "C" __declspec(dllexport) void e9(cbtevent* pEvent, uint32_t pSignature);
 
 // Data
-static int						g_DxMode = 9;
-static LPDIRECT3D9              g_pD3D9 = NULL;
-static LPDIRECT3DDEVICE9        g_pd3dDevice9 = NULL;
-static D3DPRESENT_PARAMETERS    g_d3dpp = {};
+static int						g_DxMode = 11;
 
 static ID3D11Device*            g_pd3d11Device = NULL;
 static ID3D11DeviceContext*     g_pd3d11DeviceContext = NULL;
@@ -42,16 +37,12 @@ static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 // Forward declarations of helper functions
 bool CreateDeviceD3D(HWND hWnd);
-bool CreateDeviceD3D9(HWND hWnd);
 bool CreateDeviceD3D11(HWND hWnd);
 void CreateRenderTarget();
 void CleanupDeviceD3D();
-void CleanupDeviceD3D9();
 void CleanupDeviceD3D11();
 void CleanupRenderTarget();
-void ResetDevice();
 void RenderFrame();
-void RenderFrame9();
 void RenderFrame11();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -261,8 +252,6 @@ int Run(const char* pModulePath, const char* pMockFilePath, const char* pSelfPat
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hwnd);
-	if (g_DxMode == 9)
-		ImGui_ImplDX9_Init(g_pd3dDevice9);
 	if (g_DxMode == 11)
 		ImGui_ImplDX11_Init(g_pd3d11Device, g_pd3d11DeviceContext);
 
@@ -294,7 +283,7 @@ int Run(const char* pModulePath, const char* pMockFilePath, const char* pSelfPat
 	auto get_release_addr = reinterpret_cast<GetReleaseAddrSignature>(GetProcAddress(testModuleHandle, "get_release_addr"));
 	assert(get_release_addr != nullptr);
 
-	ModInitSignature mod_init = get_init_addr(MOCK_VERSION, ImGui::GetCurrentContext(), (g_DxMode == 9) ? (void*)g_pd3dDevice9 : (void*)g_pSwapChain, selfHandle, malloc, free, g_DxMode);
+	ModInitSignature mod_init = get_init_addr(MOCK_VERSION, ImGui::GetCurrentContext(), (void*)g_pSwapChain, selfHandle, malloc, free, g_DxMode);
 	assert(mod_init != nullptr);
 	arcdps_exports* temp_exports = mod_init();
 	memcpy(&TEST_MODULE_EXPORTS, temp_exports, sizeof(TEST_MODULE_EXPORTS)); // Maybe do some deep copy at some point but we're not using the strings in there anyways
@@ -383,8 +372,6 @@ int Run(const char* pModulePath, const char* pMockFilePath, const char* pSelfPat
 		}
 
 		// Start the Dear ImGui frame
-		if (g_DxMode == 9)
-			ImGui_ImplDX9_NewFrame();
 		if (g_DxMode == 11)
 			ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -496,8 +483,6 @@ int Run(const char* pModulePath, const char* pMockFilePath, const char* pSelfPat
 	assert(mod_release != nullptr);
 	mod_release();
 
-	if (g_DxMode == 9)
-		ImGui_ImplDX9_Shutdown();
 	if (g_DxMode == 11)
 		ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
@@ -575,35 +560,11 @@ int main(int pArgumentCount, const char** pArgumentVector)
 // Helper functions
 bool CreateDeviceD3D(HWND hWnd)
 {
-	if (g_DxMode == 9)
-	{
-		return CreateDeviceD3D9(hWnd);
-	}
 	if (g_DxMode == 11)
 	{
 		return CreateDeviceD3D11(hWnd);
 	}
 	throw std::runtime_error("tried to create invalid dx mode device");
-}
-
-bool CreateDeviceD3D9(HWND hWnd)
-{
-	if ((g_pD3D9 = Direct3DCreate9(D3D_SDK_VERSION)) == NULL)
-		return false;
-
-	// Create the D3DDevice
-	ZeroMemory(&g_d3dpp, sizeof(g_d3dpp));
-	g_d3dpp.Windowed = TRUE;
-	g_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	g_d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-	g_d3dpp.EnableAutoDepthStencil = TRUE;
-	g_d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
-	g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;           // Present with vsync
-	//g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;   // Present without vsync, maximum unthrottled framerate
-	if (g_pD3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &g_d3dpp, &g_pd3dDevice9) < 0)
-		return false;
-
-	return true;
 }
 
 bool CreateDeviceD3D11(HWND hWnd)
@@ -649,20 +610,10 @@ void CreateRenderTarget()
 
 void CleanupDeviceD3D()
 {
-	if (g_DxMode == 9)
-	{
-		CleanupDeviceD3D9();
-	}
-	else if (g_DxMode == 11)
+	if (g_DxMode == 11)
 	{
 		CleanupDeviceD3D11();
 	}
-}
-
-void CleanupDeviceD3D9()
-{
-	if (g_pd3dDevice9) { g_pd3dDevice9->Release(); g_pd3dDevice9 = NULL; }
-	if (g_pD3D9) { g_pD3D9->Release(); g_pD3D9 = NULL; }
 }
 
 void CleanupDeviceD3D11()
@@ -681,46 +632,12 @@ void CleanupRenderTarget()
 	}
 }
 
-void ResetDevice()
-{
-	ImGui_ImplDX9_InvalidateDeviceObjects();
-	HRESULT hr = g_pd3dDevice9->Reset(&g_d3dpp);
-	if (hr == D3DERR_INVALIDCALL)
-		IM_ASSERT(0);
-	ImGui_ImplDX9_CreateDeviceObjects();
-}
-
 void RenderFrame()
 {
-	if (g_DxMode == 9)
-	{
-		RenderFrame9();
-	}
-	else if (g_DxMode == 11)
+	if (g_DxMode == 11)
 	{
 		RenderFrame11();
 	}
-}
-
-void RenderFrame9()
-{
-	g_pd3dDevice9->SetRenderState(D3DRS_ZENABLE, FALSE);
-	g_pd3dDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-	g_pd3dDevice9->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-	
-	D3DCOLOR clear_col_dx = D3DCOLOR_RGBA((int)(clear_color.x * 255.0f), (int)(clear_color.y * 255.0f), (int)(clear_color.z * 255.0f), (int)(clear_color.w * 255.0f));
-	g_pd3dDevice9->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, clear_col_dx, 1.0f, 0);
-	if (g_pd3dDevice9->BeginScene() >= 0)
-	{
-		ImGui::Render();
-		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-		g_pd3dDevice9->EndScene();
-	}
-	HRESULT result = g_pd3dDevice9->Present(NULL, NULL, NULL, NULL);
-
-	// Handle loss of D3D9 device
-	if (result == D3DERR_DEVICELOST && g_pd3dDevice9->TestCooperativeLevel() == D3DERR_DEVICENOTRESET)
-		ResetDevice();
 }
 
 void RenderFrame11()
@@ -756,12 +673,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_SIZE:
-		if (g_DxMode == 9 && g_pd3dDevice9 != NULL && wParam != SIZE_MINIMIZED)
-		{
-			g_d3dpp.BackBufferWidth = LOWORD(lParam);
-			g_d3dpp.BackBufferHeight = HIWORD(lParam);
-			ResetDevice();
-		}
 		if (g_DxMode == 11 && g_pd3d11Device != NULL && wParam != SIZE_MINIMIZED)
         {
             CleanupRenderTarget();
