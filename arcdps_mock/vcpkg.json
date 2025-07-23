@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "arcdps-mock",
+  "version-string": "0.1.0",
+  "dependencies": [
+	{
+	  "name": "imgui",
+	  "features": [
+		"dx9-binding",
+		"dx11-binding",
+		"win32-binding"
+	  ]
+	},
+	"nlohmann-json"
+  ]
+}

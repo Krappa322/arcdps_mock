@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Collector.h"
 
 class GUI
