@@ -1,12 +1,10 @@
 #include "Collector.h"
 #include "GUI.h"
-#include "Log.h"
 
 #include <atomic>
 #include <mutex>
 
 #include <assert.h>
-#include <d3d9helper.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <Windows.h>
@@ -72,7 +70,7 @@ static void FreeWrapper(void* pPointer, void* pUserData)
 }
 
 /* export -- arcdps looks for this exported function and calls the address it returns on client load */
-extern "C" __declspec(dllexport) void* get_init_addr(const char* pArcdpsVersionString, void* pImguiContext, IDirect3DDevice9 * pUnused, HMODULE pArcModule, MallocSignature pArcdpsMalloc, FreeSignature pArcdpsFree)
+extern "C" __declspec(dllexport) void* get_init_addr(const char* pArcdpsVersionString, void* pImguiContext, void* pUnused, HMODULE pArcModule, MallocSignature pArcdpsMalloc, FreeSignature pArcdpsFree)
 {
 	ARCDPS_VERSION = pArcdpsVersionString;
 
