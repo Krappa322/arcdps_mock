@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.28)
 
 project(ArcpdsMockDummy)
 
-# add project for log
-add_subdirectory(log)
+option(BUILD_TOOLS "Build the Collector and Mock" ON)
 
 # add project for xevtc (export xevtc.h via vcpkg)
 add_subdirectory(xevtc)
 
-# then link those to the arcdps_mock project
+if (BUILD_TOOLS)
+    # add project for log
+    add_subdirectory(log)
 
-add_subdirectory(arcdps_mock)
-add_subdirectory(arcdps_collector)
+    add_subdirectory(arcdps_mock)
+    add_subdirectory(arcdps_collector)
+endif ()
