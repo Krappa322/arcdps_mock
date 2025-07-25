@@ -3,15 +3,29 @@
   "name": "arcdps-mock",
   "version-string": "0.1.0",
   "dependencies": [
+    "imgui",
     {
-      "name": "imgui",
+      "name": "arcdps-extension",
+      "default-features": false,
       "features": [
-        "dx11-binding",
-        "win32-binding"
+        "imgui"
       ]
     },
-    "nlohmann-json",
-    "arcdps-extension",
-    "magic-enum"
-  ]
+    "magic-enum",
+    "nlohmann-json"
+  ],
+  "features": {
+    "build-tools": {
+      "description": "install dependencies for the tools",
+      "dependencies": [
+        {
+          "name": "imgui",
+          "features": [
+            "dx11-binding",
+            "win32-binding"
+          ]
+        }
+      ]
+    }
+  }
 }
