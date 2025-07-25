@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-option(BUILD_TOOLS "Build the Collector and Mock" ON)
+option(BUILD_TOOLS "Build the Collector and Mock" OFF)
 
 # features that are installed via vcpkg
 if (BUILD_TOOLS)
