@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include ( "${CMAKE_CURRENT_LIST_DIR}/ArcdpsMockTargets.cmake" )
+
+# override Include Directories.
+# The generated Targets.cmake contains targets_sources() with BASE_DIRS, which causes the subfolder to be added to the include_directories.
+# We don't want this. The files should only be included via the subfolder: `#include <ArcdpsMock/arcdps_structs.h>`
+set_target_properties(ArcdpsMock::ArcdpsMock PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${PACKAGE_PREFIX_DIR}/include"
+)

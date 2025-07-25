@@ -1,4 +1,4 @@
-project(ArcdpsMock CXX)
+project(ArcdpsMockXevtc CXX)
 
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})

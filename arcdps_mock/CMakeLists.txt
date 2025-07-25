@@ -21,6 +21,7 @@ target_compile_definitions(
         NOMINMAX
         MAGIC_ENUM_RANGE_MAX=256
 )
+target_compile_definitions(${PROJECT_NAME} PRIVATE MockProgram)
 
 # add general sources
 target_sources(${PROJECT_NAME} PUBLIC
@@ -41,5 +42,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC magic_enum::magic_enum)
 target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)
 target_link_libraries(${PROJECT_NAME} PUBLIC Version.lib d3d11.lib Winmm.lib)
-target_link_libraries(${PROJECT_NAME} PRIVATE ArcdpsMock)
+target_link_libraries(${PROJECT_NAME} PRIVATE ArcdpsMockXevtc)
 target_link_libraries(${PROJECT_NAME} PRIVATE ArcdpsMockLog)

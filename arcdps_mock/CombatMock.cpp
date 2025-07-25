@@ -1,14 +1,19 @@
 #include "CombatMock.h"
 
 #include <ArcdpsExtension/arcdps_structs.h>
-#include "Log.h"
-#include "Xevtc.h"
+#include "../xevtc/Xevtc.h"
 
 #include <imgui/imgui.h>
 #include <atomic>
 #include <cassert>
 #include <Windows.h>
 #include <nlohmann/json.hpp>
+
+#ifdef MockProgram
+#include "Log.h"
+#else
+#define LOG(...)
+#endif
 
 using json = nlohmann::json;
 
