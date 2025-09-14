@@ -509,14 +509,9 @@ int main(int pArgumentCount, const char** pArgumentVector)
 	{
 		const char* string = pArgumentVector[i];
 
-		if (std::string(string) == "-dx11")
+		if (std::string_view(string) == "-dx11")
 		{
 			g_DxMode = 11;
-			continue;
-		}
-		if (std::string(string) == "-dx9")
-		{
-			g_DxMode = 9;
 			continue;
 		}
 		if (num == 0)

@@ -71,7 +71,7 @@
         "CMAKE_CXX_COMPILER": "clang.exe",
         "CMAKE_LINKER": "lld-link.exe",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-clang-static",
+        "VCPKG_TARGET_TRIPLET": "x64-win-llvm-static",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg"
       },
       "condition": {
@@ -89,7 +89,7 @@
         "CMAKE_CXX_COMPILER": "clang.exe",
         "CMAKE_LINKER": "lld-link.exe",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-clang-static",
+        "VCPKG_TARGET_TRIPLET": "x64-win-llvm-static",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg"
       },
       "condition": {
