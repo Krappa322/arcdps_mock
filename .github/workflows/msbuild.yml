@@ -6,13 +6,13 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ windows-latest ]
+        os: [ windows-latest, windows-2025-vs2026 ]
         presets: [ release-windows ]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # install cmake and ninja
       - uses: lukka/get-cmake@latest
@@ -25,7 +25,7 @@ jobs:
           # vcpkgDirectory: '${{ github.workspace }}/vcpkg'
 
           # The Git commit id of vcpkg to be checked out. This is only needed because we are not using a submodule.
-          vcpkgGitCommitId: 'f5800a22acb14d7f753e8be12fe5ec2bc999ab44'
+          # vcpkgGitCommitId: 'f5800a22acb14d7f753e8be12fe5ec2bc999ab44'
 
           # The vcpkg.json file, which will be part of cache key computation.
           #          vcpkgJsonGlob: '${{ github.workspace }}/vcpkg.json'
