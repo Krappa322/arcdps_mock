@@ -1,9 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "arcdps-mock",
-  "version-string": "0.2.0",
+  "version": "0.2.0",
   "dependencies": [
-    "imgui",
     {
       "name": "arcdps-extension",
       "default-features": false,
@@ -11,6 +10,7 @@
         "imgui"
       ]
     },
+    "imgui",
     "magic-enum",
     "nlohmann-json"
   ],
