@@ -3,7 +3,6 @@ project(ArcdpsMock CXX)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
-find_package(rapidfuzz CONFIG REQUIRED)
 find_package(ArcdpsExtension CONFIG REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC)
