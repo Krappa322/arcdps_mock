@@ -2,7 +2,6 @@ project(ArcdpsMock CXX)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
-find_package(magic_enum CONFIG REQUIRED)
 find_package(ArcdpsExtension CONFIG REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC)
@@ -29,7 +28,6 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)
-target_link_libraries(${PROJECT_NAME} PUBLIC magic_enum::magic_enum)
 target_link_libraries(${PROJECT_NAME} PUBLIC ArcdpsExtension::ArcdpsExtension)
 
 include(GNUInstallDirs)

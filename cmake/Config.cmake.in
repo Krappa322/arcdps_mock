@@ -2,7 +2,6 @@
 
 include(CMakeFindDependencyMacro)
 
-find_dependency(magic_enum CONFIG)
 find_dependency(nlohmann_json CONFIG)
 find_dependency(imgui CONFIG)
 find_dependency(ArcdpsExtension CONFIG)

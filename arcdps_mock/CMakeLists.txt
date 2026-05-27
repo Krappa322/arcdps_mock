@@ -19,7 +19,6 @@ target_compile_definitions(
         ${PROJECT_NAME}
         PUBLIC
         NOMINMAX
-        MAGIC_ENUM_RANGE_MAX=256
 )
 target_compile_definitions(${PROJECT_NAME} PRIVATE MockProgram)
 
